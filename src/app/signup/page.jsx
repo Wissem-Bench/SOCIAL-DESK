@@ -13,10 +13,16 @@ export default function SignUp() {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    let res;
+    try {
+      res = await supabase.auth.signUp({
+        email,
+        password,
+      });
+    } catch (error) {
+      console.error("error*****", error);
+    }
+    const { data, error } = res;
     if (error) {
       if (error.message.includes("User already registered")) {
         setMessage("Cet email est déjà inscrit. Veuillez vous connecter.");
@@ -24,14 +30,13 @@ export default function SignUp() {
         setMessage("Erreur lors de l'inscription : " + error.message);
       }
     } else {
-      console.log("data:", data);
       if (!data.user?.confirmed_at) {
         setMessage(
           "Inscription réussie ! Veuillez vérifier vos e-mails pour confirmer votre compte."
         );
       } else {
         setMessage("Compte déjà confirmé. Redirection en cours...");
-        // router.push('/dashboard') // si tu veux auto-connecter après
+        // router.push('/dashboard') // if we want to auto-connect after
       }
     }
   };

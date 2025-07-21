@@ -24,7 +24,6 @@ export async function middleware(request) {
               headers: request.headers,
             },
           });
-
           for (const cookie of cookiesToSet) {
             response.cookies.set(cookie);
           }
@@ -35,6 +34,7 @@ export async function middleware(request) {
 
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
 
   const { pathname } = request.nextUrl;
@@ -43,12 +43,14 @@ export async function middleware(request) {
   if (!session && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+
     return NextResponse.redirect(url);
   }
 
-  if (session && (pathname === "/login" || pathname === "/signup")) {
+  if (session && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    console.log("*************", url);
     return NextResponse.redirect(url);
   }
 

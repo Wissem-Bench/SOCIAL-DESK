@@ -13,17 +13,26 @@ export default function Login() {
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    let result;
+    try {
+      result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+    } catch (error) {
+      console.error("______ERROR:", error);
+    }
+    const { data, error } = result;
 
     if (error) {
       setMessage("Email ou mot de passe incorrect.");
-    } else {
-      // La session est maintenant dans les cookies.
-      // Redirection vers le dashboard
+    } else if (data.user && data.session) {
+      // Connection was successful on the client side
+      setMessage("Connexion réussie, redirection...");
       router.push("/dashboard");
+      // router.refresh();
+    } else {
+      setMessage("Une erreur inattendue est survenue.");
     }
   };
 
