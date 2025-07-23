@@ -67,7 +67,7 @@ export default function ProductList({ products }) {
                   <div>
                     <p className="font-semibold text-lg">{product.name}</p>
                     <p className="text-gray-600">
-                      Prix : {product.price} TND - Stock :{" "}
+                      Prix : {product.price} TND - Quantité :{" "}
                       {product.stock_quantity}
                     </p>
                   </div>

@@ -39,7 +39,7 @@ export async function middleware(request) {
 
   const { pathname } = request.nextUrl;
 
-  // Redirection logique
+  // Logical redirections
   if (!session && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -50,7 +50,12 @@ export async function middleware(request) {
   if (session && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    console.log("*************", url);
+    return NextResponse.redirect(url);
+  }
+
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = session ? "/dashboard" : "/login";
     return NextResponse.redirect(url);
   }
 

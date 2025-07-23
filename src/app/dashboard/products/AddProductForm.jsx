@@ -42,7 +42,7 @@ export default function AddProductForm() {
         <input
           type="number"
           name="stock_quantity"
-          placeholder="Stock"
+          placeholder="Quantité"
           className="p-2 border rounded"
           required
         />
