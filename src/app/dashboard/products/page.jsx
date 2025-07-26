@@ -1,4 +1,4 @@
-import { getProductsForUser, deleteProduct } from "@/app/lib/actions/products";
+import { getProductsForUser } from "@/app/lib/actions/products";
 import AddProductForm from "./AddProductForm";
 import ProductList from "./ProductList";
 
@@ -11,7 +11,7 @@ export default async function ProductsPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="text-2xl font-bold mb-6">Gestion des Produits</h1>
+      <h1 className="text-2xl font-bold mb-6">Gestion de Stock</h1>
 
       {/* Add form */}
       <div className="mb-8">

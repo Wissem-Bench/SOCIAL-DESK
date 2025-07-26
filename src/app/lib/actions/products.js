@@ -106,6 +106,35 @@ export async function updateProduct(productId, formData) {
   return { success: "Produit mis à jour !" };
 }
 
+// ACTION TO UPDATE ONLY THE STOCK QUANTITY OF A PRODUCT
+export async function updateStockQuantity(productId, newQuantity) {
+  // the new quantity should be a non-negative number
+  const quantity = Math.max(0, Number(newQuantity));
+
+  const supabase = await createClient();
+  const auth = supabase.auth;
+  const {
+    data: { user },
+  } = await auth.getUser();
+
+  if (!user) {
+    return { error: "Unauthorized action." };
+  }
+
+  const { error } = await supabase
+    .from("products")
+    .update({ stock_quantity: quantity })
+    .match({ id: productId, user_id: user.id });
+
+  if (error) {
+    console.error("Stock Update Error:", error.message);
+    return { error: "Failed to update stock." };
+  }
+
+  revalidatePath("/dashboard/products");
+  return { success: "Stock updated." };
+}
+
 // ACTION TO DELETE A PRODUCT
 export async function deleteProduct(productId) {
   const supabase = await createClient();
