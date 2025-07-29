@@ -1,6 +1,6 @@
 import { getCustomerDetails } from "@/app/lib/actions/customers";
 import Link from "next/link";
-import OrderStatusBadge from "@/app/dashboard/orders/OrderStatusBadge"; // On réutilise notre badge !
+import OrderStatusBadge from "@/app/dashboard/orders/OrderStatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -12,7 +12,7 @@ export default async function CustomerDetailPage({ params }) {
     return <p className="p-8 text-red-500">{error || "Client introuvable."}</p>;
   }
 
-  // On trie les commandes de la plus récente à la plus ancienne
+  // Orders are sorted from most recent to oldest.
   const sortedOrders = customer.orders.sort(
     (a, b) => new Date(b.order_date) - new Date(a.order_date)
   );
@@ -28,7 +28,7 @@ export default async function CustomerDetailPage({ params }) {
         </Link>
       </div>
 
-      {/* Infos du client */}
+      {/* Customer Info */}
       <div className="bg-white p-6 rounded-lg shadow mb-8">
         <h1 className="text-3xl font-bold">{customer.full_name}</h1>
         <p className="text-gray-600 mt-2">
@@ -40,7 +40,7 @@ export default async function CustomerDetailPage({ params }) {
         </p>
       </div>
 
-      {/* Historique des commandes */}
+      {/* orders history */}
       <h2 className="text-2xl font-bold mb-4">Historique des Commandes</h2>
       <div className="space-y-4">
         {sortedOrders && sortedOrders.length > 0 ? (

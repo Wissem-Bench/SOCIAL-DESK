@@ -2,6 +2,7 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 // ACTION TO RETRIEVE ALL USER ORDERS
 export async function getOrdersForUser() {
@@ -29,7 +30,7 @@ export async function getOrdersForUser() {
       customers ( full_name ),
       order_items (
         quantity,
-        products ( name, price )
+        products ( id, name, price )
       )
     `
     )
@@ -107,8 +108,67 @@ export async function updateOrderStatus(orderId, newStatus) {
   return { success: "Statut mis à jour." };
 }
 
-// ACTION TO UPDATE ORDER DELIVERY DETAILS AND NOTES
-export async function updateOrderDetails(orderId, formData) {
+/**
+ * Updates an entire order including its line items within a single transaction.
+ * This function calls a PostgreSQL function in Supabase to ensure atomicity.
+ * @param {string} orderId - The UUID of the order to update.
+ * @param {object} data - The object containing all the new order data.
+ * @returns {Promise<{success: boolean, error: object | null}>}
+ */
+export async function updateFullOrder(orderId, data) {
+  const supabase = await createClient();
+
+  try {
+    // Get the current authenticated user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error("updateFullOrder: User not found.", userError);
+      return { success: false, error: { message: "User not authenticated." } };
+    }
+
+    // Prepare the payload for the RPC (Remote Procedure Call)
+    const payload = {
+      p_order_id: orderId,
+      p_user_id: user.id, // Pass user id for security check inside the PG function
+      p_customer_id: data.customer_id,
+      p_notes: data.notes,
+      p_delivery_service: data.delivery_service,
+      p_tracking_number: data.tracking_number,
+      p_items: data.items, // The array of items is passed as JSON
+    };
+
+    console.log("payload", payload);
+
+    // Call the PostgreSQL function using rpc()
+    const { error: rpcError } = await supabase.rpc(
+      "handle_order_update",
+      payload
+    );
+
+    if (rpcError) {
+      // If the database function returns an error, throw it
+      console.error("updateFullOrder: RPC Error:", rpcError);
+      throw rpcError;
+    }
+
+    // Revalidate the path to update the UI with the new data
+    revalidatePath("/dashboard/orders");
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error("updateFullOrder: A general error occurred.", error);
+    return {
+      success: false,
+      error: { message: error.message || "An unexpected error occurred." },
+    };
+  }
+}
+
+export async function createFullOrder(data) {
   const supabase = await createClient();
   const auth = supabase.auth;
   const {
@@ -116,27 +176,28 @@ export async function updateOrderDetails(orderId, formData) {
   } = await auth.getUser();
 
   if (!user) {
-    return { error: "Action non autorisée." };
+    return { success: false, error: { message: "User not authenticated." } };
   }
 
-  // Extract data from the form
-  const orderDetails = {
-    delivery_service: formData.get("delivery_service"),
-    tracking_number: formData.get("tracking_number"),
-    notes: formData.get("notes"),
+  const payload = {
+    p_user_id: user.id,
+    p_customer_id: data.customer_id,
+    p_notes: data.notes,
+    p_delivery_service: data.delivery_service,
+    p_tracking_number: data.tracking_number,
+    p_items: data.items,
   };
 
-  // Update the specific order in the database
-  const { error } = await supabase
-    .from("orders")
-    .update(orderDetails)
-    .match({ id: orderId, user_id: user.id });
+  const { data: newOrderId, error: rpcError } = await supabase.rpc(
+    "handle_order_create",
+    payload
+  );
 
-  if (error) {
-    console.error("Order Details Update Error:", error);
-    return { error: "Impossible de mettre à jour les détails de la commande." };
+  if (rpcError) {
+    console.error("createFullOrder: RPC Error:", rpcError);
+    return { success: false, error: { message: rpcError.message } };
   }
 
   revalidatePath("/dashboard/orders");
-  return { success: "Détails de la commande mis à jour." };
+  return { success: true, newOrderId };
 }

@@ -27,6 +27,7 @@ export async function getProductsForUser() {
     console.error("Erreur de BDD:", error.message);
     return { error: "Impossible de récupérer les produits." };
   }
+
   return { products: data };
 }
 

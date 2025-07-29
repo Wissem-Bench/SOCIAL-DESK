@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// You can find free SVG icons from libraries like heroicons.com
 const navigation = [
   {
     name: "Tableau de Bord",

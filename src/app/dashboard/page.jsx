@@ -8,7 +8,6 @@ import { getUserData } from "@/app/lib/actions/users";
 import StatCard from "./StatCard";
 import { ClientPageRoot } from "next/dist/client/components/client-page";
 
-// Simple SVG icons for the cards
 const RevenueIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -69,7 +68,6 @@ export default async function DashboardPage() {
   }
 
   const auth_user = await getUserData(user.id);
-  // console.log(auth_user.users.full_name);
 
   // Check if a Meta connection exists for this user
   // { head: true } is an optimization to not retrieve any data, just check its existence.

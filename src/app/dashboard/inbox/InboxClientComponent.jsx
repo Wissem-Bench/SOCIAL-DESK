@@ -34,7 +34,7 @@ export default function InboxClientComponent({
   }
 
   const getParticipant = (participants) => {
-    return participants.data.find((p) => p.email !== "page_email@example.com"); // Logique à affiner
+    return participants.data.find((p) => p.email !== "page_email@example.com"); // Logic to be refined
   };
 
   // We are looking for the name of the participant who is not us (the page)

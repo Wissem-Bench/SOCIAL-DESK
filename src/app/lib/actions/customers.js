@@ -2,7 +2,7 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 
-// ACTION POUR RÉCUPÉRER TOUS LES CLIENTS DE L'UTILISATEUR
+// ACTION TO RETRIEVE ALL USER CUSTOMERS
 export async function getCustomers() {
   const supabase = await createClient();
   const auth = supabase.auth;
@@ -12,7 +12,7 @@ export async function getCustomers() {
 
   if (!user) return { error: "Action non autorisée." };
 
-  // On récupère tous les clients liés à l'ID de l'utilisateur connecté
+  // We retrieve all clients linked to the logged in user ID
   const { data, error } = await supabase
     .from("customers")
     .select("*")
@@ -27,7 +27,7 @@ export async function getCustomers() {
   return { customers: data };
 }
 
-// ACTION POUR RÉCUPÉRER LE DÉTAIL D'UN CLIENT ET SES COMMANDES
+// ACTION TO RETRIEVE A CUSTOMER'S DETAILS AND ORDERS
 export async function getCustomerDetails(customerId) {
   const supabase = await createClient();
   const auth = supabase.auth;
@@ -37,10 +37,10 @@ export async function getCustomerDetails(customerId) {
 
   if (!user) return { error: "Action non autorisée." };
 
-  // Requête puissante qui récupère :
-  // 1. Les infos du client
-  // 2. Toutes ses commandes associées
-  // 3. Pour chaque commande, les articles et le nom du produit.
+  // Powerful query that retrieves:
+  // 1. Customer information
+  // 2. All associated orders
+  // 3. For each order, the items and product name.
   const { data, error } = await supabase
     .from("customers")
     .select(
@@ -59,8 +59,8 @@ export async function getCustomerDetails(customerId) {
     `
     )
     .eq("id", customerId)
-    .eq("user_id", user.id) // Sécurité : on s'assure que le client appartient bien à l'utilisateur
-    .single(); // On attend un seul résultat
+    .eq("user_id", user.id) // Security: we ensure that the client belongs to the user
+    .single(); // We expect only one result
 
   if (error) {
     console.error("Erreur BDD (getCustomerDetails):", error.message);
