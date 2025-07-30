@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import OrderToolbar from "./OrderToolbar";
@@ -12,7 +11,6 @@ import OrderPanel from "./OrderPanel";
 export default function OrderList({ initialOrders, customers, products }) {
   // We change the state to handle both modes
   const [panelState, setPanelState] = useState({ mode: null, orderId: null }); // mode can be 'edit' or 'create'
-  const [editingOrderId, setEditingOrderId] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -69,7 +67,7 @@ export default function OrderList({ initialOrders, customers, products }) {
     <>
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <h1 className="text-2xl font-bold">Gestion des Commandes</h1>
-        {/* 2. The "New Order" button that sets the state to 'create' mode */}
+        {/* 2. The "New Order" button sets the state to 'create' mode */}
         <button
           onClick={() => setPanelState({ mode: "create", orderId: null })}
           className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700"
@@ -162,15 +160,26 @@ export default function OrderList({ initialOrders, customers, products }) {
                           clipRule="evenodd"
                         />
                       </svg>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPanelState({ mode: "edit", orderId: order.id });
-                        }}
-                        className="text-blue-600 hover:underline"
-                      >
-                        #{order.order_number}
-                      </button>
+                      <h3 className="text-lg font-bold">
+                        {order.status === "nouveau" ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPanelState({
+                                mode: "edit",
+                                orderId: order.id,
+                              });
+                            }}
+                            className="text-blue-600 hover:underline"
+                          >
+                            #{order.order_number}
+                          </button>
+                        ) : (
+                          <span className="text-blue-600">
+                            #{order.order_number}
+                          </span>
+                        )}
+                      </h3>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -187,7 +196,7 @@ export default function OrderList({ initialOrders, customers, products }) {
                     }}
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 min-w-[150px]"
                   >
-                    <StatusDropdown order={order} statuses={statuses} />
+                    <StatusDropdown order={order} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                     {new Intl.NumberFormat("fr-FR", {
@@ -211,15 +220,21 @@ export default function OrderList({ initialOrders, customers, products }) {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPanelState({ mode: "edit", orderId: order.id });
-                      }}
-                      className="text-yellow-600 hover:text-yellow-900"
-                    >
-                      Modifier
-                    </button>
+                    {order.status === "nouveau" ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPanelState({ mode: "edit", orderId: order.id });
+                        }}
+                        className="text-yellow-600 hover:text-yellow-900"
+                      >
+                        Modifier
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 cursor-not-allowed">
+                        Modifier
+                      </span>
+                    )}
                   </td>
                 </tr>,
                 expandedOrderId === order.id && (

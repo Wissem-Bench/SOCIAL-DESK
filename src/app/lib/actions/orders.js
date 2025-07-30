@@ -201,3 +201,61 @@ export async function createFullOrder(data) {
   revalidatePath("/dashboard/orders");
   return { success: true, newOrderId };
 }
+
+// ACTION TO CANCEL AN ORDER AND ADD A NOTE
+export async function cancelOrderWithNote(orderId, cancellationNote) {
+  const supabase = await createClient();
+  const auth = supabase.auth;
+  const {
+    data: { user },
+  } = await auth.getUser();
+
+  if (!user) return { error: "Action non autorisée." };
+
+  // First, call the existing RPC to update status and restock inventory
+  const { error: rpcError } = await supabase.rpc(
+    "update_order_status_and_stock",
+    {
+      order_id_to_update: orderId,
+      new_status: "annulé",
+    }
+  );
+
+  if (rpcError) {
+    console.error("RPC Error on cancel:", rpcError);
+    return { error: "Impossible de changer le statut." };
+  }
+
+  // If status update is successful, append the cancellation note
+  if (cancellationNote) {
+    // Fetch the current note
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from("orders")
+      .select("notes")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError) {
+      console.error("Fetch note error:", fetchError);
+      return { error: "Impossible de récupérer la note existante." };
+    }
+
+    // Create the new note by appending
+    const newNote = currentOrder.notes
+      ? `${currentOrder.notes}\n--- Annulation ---\n${cancellationNote}`
+      : `--- Annulation ---\n${cancellationNote}`;
+
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ notes: newNote })
+      .eq("id", orderId);
+
+    if (updateError) {
+      console.error("Note update error:", updateError);
+      return { error: "Impossible de sauvegarder la note d'annulation." };
+    }
+  }
+
+  revalidatePath("/dashboard/orders");
+  return { success: "Commande annulée avec succès." };
+}

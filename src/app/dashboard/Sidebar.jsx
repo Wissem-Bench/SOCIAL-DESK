@@ -117,7 +117,7 @@ export default function Sidebar({ isOpen }) {
       aria-label="Sidebar"
     >
       <div className="p-4">
-        <h1 className="text-2xl font-bold">Votre App</h1>
+        <h1 className="text-2xl font-bold">Social Desk</h1>
       </div>
       <ul className="mt-6">
         {navigation.map((item) => (
