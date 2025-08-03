@@ -54,7 +54,6 @@ export default function StatusDropdown({ order }) {
 
   const handleSelectionChange = async (e) => {
     const newStatus = e.target.value;
-    setIsUpdating(true);
     if (newStatus === order.status) return;
     setError(null);
     const messages = {
@@ -114,13 +113,6 @@ export default function StatusDropdown({ order }) {
   };
 
   const handleCloseModal = () => {
-    // // Reset the dropdown to its original value if the user cancels
-    // const selectElement = document.querySelector(
-    //   `select[name="status"][value="${localStatus}"]`
-    // );
-    // if (selectElement) selectElement.value = order.status;
-
-    // setConfirmation({ isOpen: false, title: "", message: "", newStatus: null });
     setError(null); // Reset error when closing
     setConfirmation({
       isOpen: false,

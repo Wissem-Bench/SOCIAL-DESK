@@ -1,0 +1,161 @@
+"use client";
+
+import { useState } from "react";
+import { recordStockArrival } from "@/app/lib/actions/products";
+import { XCircleIcon } from "@heroicons/react/20/solid";
+
+export default function StockArrivalModal({ products, onClose }) {
+  const [lineItems, setLineItems] = useState([{ product_id: "", quantity: 1 }]);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+
+  const handleLineItemChange = (index, field, value) => {
+    const updatedItems = [...lineItems];
+    updatedItems[index][field] = value;
+    setLineItems(updatedItems);
+  };
+
+  const addLineItem = () => {
+    setLineItems([...lineItems, { product_id: "", quantity: 1 }]);
+  };
+
+  const removeLineItem = (index) => {
+    setLineItems(lineItems.filter((_, i) => i !== index));
+  };
+
+  const handleFormSubmit = async () => {
+    setError("");
+    const validItems = lineItems
+      .filter((item) => item.product_id && item.quantity > 0)
+      .map((item) => ({
+        product_id: item.product_id,
+        quantity: Number(item.quantity),
+      }));
+
+    if (validItems.length === 0) {
+      setError(
+        "Veuillez ajouter au moins un produit avec une quantité valide."
+      );
+      return;
+    }
+
+    let res = reason ? "Arrivage - " + reason : "Arrivage";
+    console.log("res", res);
+
+    const result = await recordStockArrival({ res, items: validItems });
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      onClose();
+    }
+  };
+
+  // Prevent already selected products from appearing in other dropdowns
+  const availableProducts = products.filter(
+    (p) => !lineItems.some((item) => item.product_id === p.id)
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Enregistrer un Arrivage</h2>
+          <button type="button" onClick={onClose}>
+            <XCircleIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+
+        <form action={handleFormSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Raison / Note d'arrivage
+            </label>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Ex: Livraison Fournisseur A - 02/08/2025"
+              className="mt-1 block w-full p-2 border rounded-md"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Produits reçus
+            </label>
+            {lineItems.map((item, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <select
+                  value={item.product_id}
+                  onChange={(e) =>
+                    handleLineItemChange(index, "product_id", e.target.value)
+                  }
+                  required
+                  className="flex-grow p-2 border rounded-md"
+                >
+                  <option value="" disabled>
+                    Sélectionner un produit
+                  </option>
+                  {/* Allow the current item's product to be in the list */}
+                  {item.product_id && (
+                    <option value={item.product_id}>
+                      {products.find((p) => p.id === item.product_id)?.name}
+                    </option>
+                  )}
+                  {availableProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) =>
+                    handleLineItemChange(index, "quantity", e.target.value)
+                  }
+                  min="1"
+                  required
+                  className="w-24 p-2 border rounded-md text-center"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeLineItem(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  Retirer
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addLineItem}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              + Ajouter un produit
+            </button>
+          </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Enregistrer l'arrivage
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

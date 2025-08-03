@@ -23,7 +23,7 @@ export default function OrderDetailsRow({ order }) {
                   {new Intl.NumberFormat("fr-FR", {
                     style: "currency",
                     currency: "TND",
-                  }).format(item.products?.price * item.quantity)}
+                  }).format(item.products?.selling_price * item.quantity)}
                 </span>
               </li>
             ))}

@@ -1,26 +1,17 @@
-import { getProductsForUser } from "@/app/lib/actions/products";
-import AddProductForm from "./AddProductForm";
+import { getProductsForUser, getCategories } from "@/app/lib/actions/products";
 import ProductList from "./ProductList";
 
 export default async function ProductsPage() {
-  const { products, error } = await getProductsForUser();
+  const [{ products, error }, { categories, error: catError }] =
+    await Promise.all([getProductsForUser(), getCategories()]);
 
-  if (error) {
+  if (error || catError) {
     return <p className="p-8 text-red-500">{error}</p>;
   }
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="text-2xl font-bold mb-6">Gestion de Stock</h1>
-
-      {/* Add form */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-3">
-          Ajouter un nouveau produit
-        </h2>
-        <AddProductForm />
-      </div>
-      <ProductList products={products} />
+      <ProductList initialProducts={products} categories={categories} />
     </div>
   );
 }

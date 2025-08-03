@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Pencil } from "lucide-react";
 import OrderToolbar from "./OrderToolbar";
 import StatusDropdown from "./StatusDropdown";
 import OrderDetailsRow from "./OrderDetailsRow";
@@ -112,7 +113,7 @@ export default function OrderList({ initialOrders, customers, products }) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 Statut
               </th>
@@ -226,15 +227,12 @@ export default function OrderList({ initialOrders, customers, products }) {
                           e.stopPropagation();
                           setPanelState({ mode: "edit", orderId: order.id });
                         }}
-                        className="text-yellow-600 hover:text-yellow-900"
+                        className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-normal px-4 py-1 rounded-md shadow-sm transition"
                       >
+                        <Pencil size={14} />
                         Modifier
                       </button>
-                    ) : (
-                      <span className="text-gray-400 cursor-not-allowed">
-                        Modifier
-                      </span>
-                    )}
+                    ) : null}
                   </td>
                 </tr>,
                 expandedOrderId === order.id && (

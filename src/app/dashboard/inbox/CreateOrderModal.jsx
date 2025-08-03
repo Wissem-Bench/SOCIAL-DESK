@@ -65,7 +65,7 @@ export default function CreateOrderModal({
                 <option value="">Sélectionner un produit</option>
                 {products?.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} - {p.price} TND
+                    {p.name} - {p.selling_price} TND
                   </option>
                 ))}
               </select>

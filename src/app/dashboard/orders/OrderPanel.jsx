@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { Combobox, Transition } from "@headlessui/react";
 import {
   CheckIcon,
@@ -6,7 +6,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/20/solid";
 import { updateFullOrder, createFullOrder } from "@/app/lib/actions/orders";
-// --
+
 export default function OrderPanel({ order, customers, products, onClose }) {
   // Determine the mode based on the presence of the 'order' prop (Add/Edit)
   const isEditMode = !!order;
@@ -21,7 +21,14 @@ export default function OrderPanel({ order, customers, products, onClose }) {
     // If not in edit mode, start with one empty line item
     if (!isEditMode) {
       return [
-        { product_id: "", quantity: 1, price_at_purchase: 0, products: null },
+        {
+          product_id: "",
+          quantity: 1,
+          selling_price: 0,
+          purchase_price: 0,
+          products: null,
+          hasStockError: false,
+        },
       ];
     }
     const items = Array.isArray(order.order_items)
@@ -39,49 +46,14 @@ export default function OrderPanel({ order, customers, products, onClose }) {
           name: "Produit supprimé",
           stock_quantity: 0,
         },
-        price_at_purchase: item.price_at_purchase ?? productDetails?.price ?? 0,
+        selling_price: item.selling_price ?? productDetails?.selling_price ?? 0,
+        purchase_price: 0,
+        hasStockError: false,
       };
     });
   }, [order?.order_items, products]);
 
-  const [lineItems, setLineItems] = useState([]);
-  const [originalLineItems, setOriginalLineItems] = useState([]); // Pour le mode édition
-
-  // useEffect pour initialiser et réinitialiser l'état quand le panneau s'ouvre
-  useEffect(() => {
-    if (!order && !isEditMode) {
-      // Mode Ajout : commence avec une ligne vide
-      setLineItems([
-        {
-          product_id: "",
-          quantity: 1,
-          price_at_purchase: 0,
-          products: null,
-          hasStockError: false,
-        },
-      ]);
-      setOriginalLineItems([]);
-      return;
-    }
-
-    if (order) {
-      // Mode Édition : prépare les lignes initiales
-      const items = Array.isArray(order.order_items) ? order.order_items : [];
-      const initialItems = items.map((item) => {
-        const productDetails = products.find((p) => p.id === item.product_id);
-        return {
-          ...item,
-          products: productDetails || {
-            name: "Produit supprimé",
-            stock_quantity: 0,
-          },
-          hasStockError: false, // Pas d'erreur au début
-        };
-      });
-      setLineItems(initialItems);
-      setOriginalLineItems(JSON.parse(JSON.stringify(initialItems))); // Copie profonde pour référence
-    }
-  }, [order, products, isEditMode]);
+  const [lineItems, setLineItems] = useState(initialLineItems);
 
   // FORM SUBMISSION MANAGEMENT
   const handleFormSubmit = async (formData) => {
@@ -95,11 +67,12 @@ export default function OrderPanel({ order, customers, products, onClose }) {
         .map((item) => ({
           product_id: item.product_id || item.products?.id,
           quantity: item.quantity,
-          price_at_purchase: item.price_at_purchase,
+          selling_price: item.selling_price,
+          purchase_price: item.purchase_price,
         })),
     };
 
-    // 4. Call the correct action based on the mode
+    // Call the correct action based on the mode
     if (isEditMode) {
       await updateFullOrder(order.id, dataToSubmit);
     } else {
@@ -118,7 +91,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
   const subTotal = useMemo(
     () =>
       lineItems.reduce(
-        (acc, item) => acc + item.quantity * item.price_at_purchase,
+        (acc, item) => acc + item.quantity * item.selling_price,
         0
       ),
     [lineItems]
@@ -133,24 +106,25 @@ export default function OrderPanel({ order, customers, products, onClose }) {
       const selectedProduct = products.find((p) => p.id === value);
       if (selectedProduct) {
         item.product_id = selectedProduct.id;
-        item.price_at_purchase = selectedProduct.price;
-        item.products = selectedProduct;
-        // Valide le stock pour la quantité actuelle
+        item.selling_price = selectedProduct.selling_price;
+        item.purchase_price = selectedProduct.purchase_price;
+        item.products = selectedProduct; // We store the complete product object
+        // validate stock for current quantity
         const originalQty =
-          originalLineItems.find((orig) => orig.product_id === item.product_id)
+          initialLineItems.find((orig) => orig.product_id === item.product_id)
             ?.quantity || 0;
         const availableStock =
           selectedProduct.stock_quantity + (isEditMode ? originalQty : 0);
         item.hasStockError = item.quantity > availableStock;
       }
     } else if (field === "quantity") {
-      const newQuantity = Math.max(1, Number(value) || 1);
+      const newQuantity = Math.max(1, Number(value) || 1); // Prevents a quantity of 0 or less
       item.quantity = newQuantity;
       if (item.products) {
-        // Logique de stock pour le mode édition : le stock disponible est le stock actuel
-        // + la quantité qui était déjà dans cette commande.
+        // Stock logic for edit mode: Available stock is the current stock
+        // + the quantity already in this order.
         const originalQty =
-          originalLineItems.find((orig) => orig.product_id === item.product_id)
+          initialLineItems.find((orig) => orig.product_id === item.product_id)
             ?.quantity || 0;
         const availableStock =
           item.products.stock_quantity + (isEditMode ? originalQty : 0);
@@ -165,7 +139,13 @@ export default function OrderPanel({ order, customers, products, onClose }) {
   const addLineItem = () => {
     setLineItems([
       ...lineItems,
-      { product_id: "", quantity: 1, price_at_purchase: 0, products: null },
+      {
+        product_id: "",
+        quantity: 1,
+        selling_price: 0,
+        purchase_price: 0,
+        products: null,
+      },
     ]);
   };
 
@@ -245,7 +225,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                   onChange={setSelectedCustomer}
                 >
                   <Combobox.Label className="block text-sm font-medium text-gray-700">
-                    Client*
+                    Client
                   </Combobox.Label>
                   <div className="relative mt-1">
                     <Combobox.Input
@@ -311,7 +291,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
 
               {/* --- COMMAND LINES --- */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700">Produits*</h3>
+                <h3 className="text-sm font-medium text-gray-700">Produits</h3>
                 <div className="mt-2 space-y-2">
                   {lineItems.map((item, index) => {
                     const availableProducts = getAvailableProducts(
@@ -319,13 +299,12 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                       lineItems,
                       index
                     );
-
-                    // On détermine s'il y a une erreur pour cette ligne
+                    // We determine if there is an error for this line
                     const hasError = item.hasStockError;
 
-                    // En mode édition, le stock "disponible" inclut ce qui est déjà dans la commande
+                    // In edit mode, the "available" stock includes what is already in the order
                     const originalQty =
-                      originalLineItems.find(
+                      initialLineItems.find(
                         (orig) => orig.product_id === item.product_id
                       )?.quantity || 0;
                     const effectiveStock =
@@ -335,7 +314,6 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                     return (
                       <div
                         key={index}
-                        // L'encadré devient rouge en cas d'erreur
                         className={`flex items-start gap-2 p-2 rounded-md border transition-colors ${
                           hasError
                             ? "bg-red-50 border-red-300"
@@ -375,7 +353,6 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                               >
                                 Stock disponible : {effectiveStock}
                               </p>
-                              {/* Le message d'erreur n'apparaît que si nécessaire */}
                               {hasError && (
                                 <p className="text-xs text-red-600 font-semibold mt-1">
                                   Stock insuffisant !
@@ -395,7 +372,6 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                               e.target.value
                             )
                           }
-                          // L'input devient rouge aussi
                           className={`w-20 p-2 text-center border rounded-md ${
                             hasError
                               ? "border-red-500 ring-2 ring-red-200"
@@ -404,10 +380,17 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                           min="1"
                         />
 
-                        {/* Le reste de la ligne (prix, bouton supprimer) reste inchangé */}
                         <span className="w-28 text-right text-sm font-medium text-gray-700 pt-2">
-                          {/* ... formatage du prix ... */}
+                          {new Intl.NumberFormat("fr-FR", {
+                            style: "currency",
+                            currency: "TND",
+                          }).format(
+                            item?.selling_price
+                              ? item.selling_price * item.quantity
+                              : 0
+                          )}
                         </span>
+
                         <button
                           type="button"
                           onClick={() => removeLineItem(index)}

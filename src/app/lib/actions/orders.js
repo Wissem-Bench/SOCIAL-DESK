@@ -30,7 +30,7 @@ export async function getOrdersForUser() {
       customers ( full_name ),
       order_items (
         quantity,
-        products ( id, name, price )
+        products ( id, name, selling_price )
       )
     `
     )
@@ -140,8 +140,6 @@ export async function updateFullOrder(orderId, data) {
       p_tracking_number: data.tracking_number,
       p_items: data.items, // The array of items is passed as JSON
     };
-
-    console.log("payload", payload);
 
     // Call the PostgreSQL function using rpc()
     const { error: rpcError } = await supabase.rpc(
