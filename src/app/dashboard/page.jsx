@@ -149,12 +149,12 @@ export default async function DashboardPage() {
               >
                 Gérer les Produits
               </Link>
-              <Link
+              {/* <Link
                 href="/dashboard/customers"
                 className="block p-6 bg-orange-100 hover:bg-orange-200 rounded-lg text-center text-orange-800 font-semibold transition"
               >
                 Voir les Clients
-              </Link>
+              </Link> */}
             </div>
           </div>
 
