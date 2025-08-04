@@ -9,8 +9,8 @@ export default function OrderStatusBadge({ status }) {
 
   return (
     <span
-      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-        statusStyles[status] || "bg-gray-100"
+      className={`w-20 h-6 flex items-center justify-center text-xs font-semibold rounded-full ${
+        statusStyles[status] || "bg-gray-100 text-gray-800"
       }`}
     >
       {status.replace("_", " ")}

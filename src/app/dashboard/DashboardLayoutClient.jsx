@@ -7,39 +7,51 @@ import TopNavbar from "./TopNavbar";
 
 export default function DashboardLayoutClient({ children }) {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
-  // Automatically close sidebar on route change (for mobile)
+  // Detects if the screen is mobile (client-side only)
   useEffect(() => {
-    if (window.innerWidth < 768) {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Closes the sidebar on mobile when changing pages
+  useEffect(() => {
+    if (isMobile) {
       setIsSidebarExpanded(false);
     }
-  }, [pathname]);
+  }, [pathname, isMobile]);
 
   const handleMenuToggle = () => {
-    setIsSidebarExpanded(!isSidebarExpanded);
+    setIsSidebarExpanded((prev) => !prev);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div
         onMouseEnter={() => {
-          if (window.innerWidth >= 768) setIsSidebarExpanded(true);
+          if (!isMobile) setIsSidebarExpanded(true);
         }}
         onMouseLeave={() => {
-          if (window.innerWidth >= 768) setIsSidebarExpanded(false);
+          if (!isMobile) setIsSidebarExpanded(false);
         }}
       >
         <Sidebar
           isExpanded={isSidebarExpanded}
           onLinkClick={() => {
-            if (window.innerWidth < 768) setIsSidebarExpanded(false);
+            if (isMobile) setIsSidebarExpanded(false);
           }}
         />
       </div>
 
       {/* Overlay for mobile when sidebar is open */}
-      {isSidebarExpanded && window.innerWidth < 768 && (
+      {isSidebarExpanded && isMobile && (
         <div
           onClick={() => setIsSidebarExpanded(false)}
           className="fixed inset-0 bg-black opacity-50 z-30"

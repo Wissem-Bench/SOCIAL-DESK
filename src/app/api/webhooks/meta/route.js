@@ -22,6 +22,7 @@ export async function GET(request) {
 
 // This function handles incoming updates from Meta (e.g., new messages).
 export async function POST(request) {
+  console.log("__HERE__");
   const body = await request.text(); // Get raw body for signature verification
   const signature = request.headers.get("x-hub-signature-256") ?? "";
 
