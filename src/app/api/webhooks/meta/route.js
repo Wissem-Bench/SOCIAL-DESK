@@ -21,30 +21,46 @@ export async function GET(request) {
   }
 }
 
-// This function handles incoming updates from Meta (e.g., new messages).
+// A temporary, simplified POST function for debugging ONLY.
 export async function POST(request) {
-  const body = await request.text(); // Get raw body for signature verification
-  const signature = request.headers.get("x-hub-signature-256") ?? "";
-
-  // --- Verify the request signature for security ---
-  const hmac = crypto.createHmac("sha256", process.env.META_APP_SECRET);
-  hmac.update(body);
-  const expectedSignature = `sha256=${hmac.digest("hex")}`;
-
-  if (signature !== expectedSignature) {
-    console.warn("Webhook signature verification failed!");
-    return new NextResponse("Invalid signature", { status: 401 });
-  }
+  console.log("--- META WEBHOOK: POST REQUEST RECEIVED ---");
 
   try {
-    const data = JSON.parse(body);
-    // Call our new server action to process the event
-    // We don't wait for it to finish (no await) to respond to Meta quickly
-    processWebhookEvent(data);
+    const body = await request.text();
+    console.log("--- META WEBHOOK: RAW BODY ---");
+    console.log(body);
   } catch (e) {
-    console.error("Webhook POST Error:", e);
+    console.error("--- META WEBHOOK: ERROR READING BODY ---", e);
   }
-  // --- Respond with 200 OK ---
-  // It's crucial to respond quickly, otherwise Meta will retry the request.
-  return new NextResponse("EVENT_RECEIVED", { status: 200 });
+
+  // We always respond with 200 OK during this test.
+  return new NextResponse("OK", { status: 200 });
 }
+
+// // This function handles incoming updates from Meta (e.g., new messages).
+// export async function POST(request) {
+//   const body = await request.text(); // Get raw body for signature verification
+//   const signature = request.headers.get("x-hub-signature-256") ?? "";
+
+//   // --- Verify the request signature for security ---
+//   const hmac = crypto.createHmac("sha256", process.env.META_APP_SECRET);
+//   hmac.update(body);
+//   const expectedSignature = `sha256=${hmac.digest("hex")}`;
+
+//   if (signature !== expectedSignature) {
+//     console.warn("Webhook signature verification failed!");
+//     return new NextResponse("Invalid signature", { status: 401 });
+//   }
+
+//   try {
+//     const data = JSON.parse(body);
+//     // Call our new server action to process the event
+//     // We don't wait for it to finish (no await) to respond to Meta quickly
+//     processWebhookEvent(data);
+//   } catch (e) {
+//     console.error("Webhook POST Error:", e);
+//   }
+//   // --- Respond with 200 OK ---
+//   // It's crucial to respond quickly, otherwise Meta will retry the request.
+//   return new NextResponse("EVENT_RECEIVED", { status: 200 });
+// }
