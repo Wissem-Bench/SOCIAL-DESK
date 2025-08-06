@@ -19,7 +19,7 @@ export default function OrderDetailsRow({ order }) {
                 <span className="text-gray-600">
                   {item.quantity} x {item.products?.name || "Produit inconnu"}
                 </span>
-                <span className="font-medium text-gray-800">
+                <span className="font-medium text-gray-800 hover:bg-slate-100">
                   {new Intl.NumberFormat("fr-FR", {
                     style: "currency",
                     currency: "TND",

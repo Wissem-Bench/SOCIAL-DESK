@@ -40,7 +40,6 @@ export default function StockArrivalModal({ products, onClose }) {
     }
 
     let res = reason ? "Arrivage - " + reason : "Arrivage";
-    console.log("res", res);
 
     const result = await recordStockArrival({ res, items: validItems });
 

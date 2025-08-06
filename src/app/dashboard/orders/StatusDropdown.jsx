@@ -161,6 +161,7 @@ export default function StatusDropdown({ order }) {
         {availableStatuses.map((status) => (
           <option key={status} value={status} className="bg-white text-black">
             {status.replace(/_/g, " ")}
+            {status === "livré" ? " ✓" : ""}
           </option>
         ))}
       </select>

@@ -15,33 +15,36 @@ export async function getOrdersForUser() {
   if (!user) {
     return { error: "Vous devez être connecté." };
   }
-
   // a query that retrieves orders and associated customer information,
   // for each order, the items and associated product information.
-  const { data, error } = await supabase
-    .from("orders")
-    .select(
-      `
-      *,
-      order_number, 
-      delivery_service,
-      tracking_number,
-      notes,
-      customers ( full_name ),
-      order_items (
-        quantity,
-        products ( id, name, selling_price )
-      )
-    `
-    )
-    .eq("user_id", user.id)
-    .order("order_date", { ascending: false });
+  const { data, error } = await supabase.rpc("get_orders_with_items", {
+    p_user_id: user.id,
+  });
+
+  // const { data, error } = await supabase
+  //   .from("orders")
+  //   .select(
+  //     `
+  //     *,
+  //     order_number,
+  //     delivery_service,
+  //     tracking_number,
+  //     notes,
+  //     customers ( full_name ),
+  //     order_items (
+  //       quantity,
+  //       products!inner ( id, name, selling_price )
+  //     )
+  //   `
+  //   )
+  //   .eq("user_id", user.id)
+  //   .order("order_date", { ascending: false });
 
   if (error) {
     console.error("Erreur BDD:", error.message);
     return { error: "Impossible de récupérer les commandes." };
   }
-
+  console.log("data", data[7].order_items);
   return { orders: data };
 }
 

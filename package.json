@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@headlessui/react": "^2.2.6",
+    "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.52.0",
     "date-fns": "^4.1.0",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
     "lucide-react": "^0.536.0",
     "next": "15.4.1",
     "react": "19.1.0",

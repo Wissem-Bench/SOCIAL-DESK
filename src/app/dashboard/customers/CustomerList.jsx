@@ -51,7 +51,6 @@ function CustomerToolbar({
             id="platform-filter"
             value={platformFilter}
             onChange={(e) => {
-              console.log("e.target.value", e.target.value);
               onPlatformChange(e.target.value);
             }}
             className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm"
@@ -98,7 +97,6 @@ function CustomerOrdersHistoryRow({ customerId }) {
       setIsLoading(true);
       setError(null);
       const result = await getCustomerOrders(customerId);
-      console.log("result?.customer?.orders", result?.customer?.orders);
       if (result.error) {
         setError(result.error);
       } else {
@@ -213,7 +211,6 @@ export default function CustomerList({ initialCustomers }) {
     }
     // Filter by platform
     if (platformFilter !== "all") {
-      console.log("result", result);
       result = result.filter((c) => c.platform === platformFilter);
     }
     // Sort

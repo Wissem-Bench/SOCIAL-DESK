@@ -178,7 +178,6 @@ export async function recordStockArrival(data) {
   const reason = data.res;
 
   if (!reason || !data.items || data.items.length === 0) {
-    console.log("data", data);
     return { error: "La raison et au moins un produit sont requis." };
   }
 
