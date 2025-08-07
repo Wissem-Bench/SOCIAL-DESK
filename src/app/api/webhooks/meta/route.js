@@ -1,66 +1,33 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
-import { processWebhookEvent } from "@/app/lib/actions/webhooks";
 
-// This function handles the one-time webhook verification request from Meta.
+// Meta webhook verification (GET)
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("hub.mode");
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  // Check the mode and token sent are correct
   if (mode === "subscribe" && token === process.env.META_WEBHOOK_VERIFY_TOKEN) {
-    // Respond with 200 OK and challenge token from the request
-    console.log("Webhook verified successfully!");
+    console.log("✅ Webhook verified successfully.");
     return new NextResponse(challenge, { status: 200 });
-  } else {
-    // Responds with '403 Forbidden' if verify tokens do not match
-    console.error("Webhook verification failed.");
-    return new NextResponse("Forbidden", { status: 403 });
   }
+
+  return new NextResponse("Forbidden", { status: 403 });
 }
 
-// A temporary, simplified POST function for debugging ONLY.
+// Meta webhook events (POST)
 export async function POST(request) {
+  // Checkpoint 1: POST Request First Checkpoint
   console.log("--- META WEBHOOK: POST REQUEST RECEIVED ---");
-
   try {
-    const body = await request.text();
-    console.log("--- META WEBHOOK: RAW BODY ---");
-    console.log(body);
-  } catch (e) {
-    console.error("--- META WEBHOOK: ERROR READING BODY ---", e);
+    const rawBody = await request.text(); // VERY IMPORTANT: Do NOT use .json() here
+    console.log("📩 Received Meta Webhook POST:", rawBody);
+
+    // Optional: You can verify the X-Hub-Signature here if needed
+
+    return new NextResponse("EVENT_RECEIVED", { status: 200 });
+  } catch (error) {
+    console.error("❌ Error reading POST body:", error);
+    return new NextResponse("Error processing webhook", { status: 500 });
   }
-
-  // We always respond with 200 OK during this test.
-  return new NextResponse("OK", { status: 200 });
 }
-
-// // This function handles incoming updates from Meta (e.g., new messages).
-// export async function POST(request) {
-//   const body = await request.text(); // Get raw body for signature verification
-//   const signature = request.headers.get("x-hub-signature-256") ?? "";
-
-//   // --- Verify the request signature for security ---
-//   const hmac = crypto.createHmac("sha256", process.env.META_APP_SECRET);
-//   hmac.update(body);
-//   const expectedSignature = `sha256=${hmac.digest("hex")}`;
-
-//   if (signature !== expectedSignature) {
-//     console.warn("Webhook signature verification failed!");
-//     return new NextResponse("Invalid signature", { status: 401 });
-//   }
-
-//   try {
-//     const data = JSON.parse(body);
-//     // Call our new server action to process the event
-//     // We don't wait for it to finish (no await) to respond to Meta quickly
-//     processWebhookEvent(data);
-//   } catch (e) {
-//     console.error("Webhook POST Error:", e);
-//   }
-//   // --- Respond with 200 OK ---
-//   // It's crucial to respond quickly, otherwise Meta will retry the request.
-//   return new NextResponse("EVENT_RECEIVED", { status: 200 });
-// }
