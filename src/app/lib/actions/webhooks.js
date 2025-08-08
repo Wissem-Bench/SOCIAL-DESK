@@ -2,61 +2,105 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 
-// This is the core processing logic
-async function handleMessage(messageEvent) {
-  const supabase = createClient();
-
-  // Ignore messages sent by the page itself
+async function handleNewMessage(messageEvent) {
+  // Ignore messages sent by the page itself (echoes)
   if (messageEvent.message && messageEvent.message.is_echo) {
+    console.log("Webhook: Ignoring echo message.");
     return;
   }
 
+  const supabase = createClient();
   const pageId = messageEvent.recipient.id;
   const customerPlatformId = messageEvent.sender.id;
 
-  // 1. Find which of our users this message belongs to.
-  // We need to query social_connections to link the Page ID back to a user in our system.
-  // Note: 'platform_user_id' in social_connections should store the USER's Facebook ID,
-  // not the Page ID. We'll need a way to link a Page to a User.
-  // For now, let's assume we find a user. THIS PART WILL NEED REFINEMENT.
+  // 1. Find which of our users this message belongs to, using the Page ID
+  const { data: connection, error: connError } = await supabase
+    .from("social_connections")
+    .select("user_id")
+    .eq("platform_page_id", pageId)
+    .single();
 
-  // Let's find the user who has this page connected. This is a placeholder for now.
-  // A better schema would be to store connected pages in social_connections.
-  // For now, let's just log it to prove we can parse it.
+  if (connError || !connection) {
+    console.error(
+      "Webhook: Could not find user for page ID:",
+      pageId,
+      connError
+    );
+    return;
+  }
+  const userId = connection.user_id;
 
-  console.log(`--- New Message Received ---`);
-  console.log(`From: ${customerPlatformId}`);
-  console.log(`To Page: ${pageId}`);
-  console.log(`Content: ${messageEvent.message.text}`);
-  console.log(`--------------------------`);
+  // 2. Find or create the customer profile
+  const { data: customer, error: custError } = await supabase
+    .from("customers")
+    .upsert(
+      {
+        user_id: userId,
+        platform_customer_id: customerPlatformId,
+        platform: "facebook",
+        full_name: `Client ${customerPlatformId.substring(0, 4)}`, // Placeholder name
+      },
+      { onConflict: "user_id, platform_customer_id, platform" }
+    )
+    .select()
+    .single();
 
-  // The logic to save to DB will be activated once the user<->page link is solid.
+  if (custError) {
+    console.error("Webhook: Error upserting customer:", custError);
+    return;
+  }
+
+  // 3. Find or create the conversation thread
+  const { data: conversation, error: convoError } = await supabase
+    .from("conversations")
+    .upsert(
+      {
+        user_id: userId,
+        customer_id: customer.id,
+        platform: "facebook",
+        platform_conversation_id: customerPlatformId, // The conversation ID is the customer's ID for DMs
+        status: "non lu",
+        last_message_at: new Date(messageEvent.timestamp),
+      },
+      { onConflict: "user_id, platform, platform_conversation_id" }
+    )
+    .select()
+    .single();
+
+  if (convoError) {
+    console.error("Webhook: Error upserting conversation:", convoError);
+    return;
+  }
+
+  // 4. Insert the new message, avoiding duplicates
+  const { error: msgError } = await supabase.from("messages").insert({
+    conversation_id: conversation.id,
+    platform_message_id: messageEvent.message.mid,
+    sender_id: customerPlatformId,
+    recipient_id: pageId,
+    content: messageEvent.message.text,
+    sent_at: new Date(messageEvent.timestamp),
+    sender_type: "client",
+  });
+
+  // Ignore duplicate message errors (code 23505), as Meta can send events more than once
+  if (msgError && msgError.code !== "23505") {
+    console.error("Webhook: Error inserting message:", msgError);
+  } else {
+    console.log(
+      `Successfully processed message ${messageEvent.message.mid} for conversation ${conversation.id}`
+    );
+  }
 }
 
 export async function processWebhookEvent(payload) {
-  console.log("Processing webhook event...");
-
-  // Handle REAL events from Meta
   if (payload.object === "page" && payload.entry) {
     for (const entry of payload.entry) {
       for (const event of entry.messaging) {
-        await handleMessage(event);
+        if (event.message) {
+          await handleNewMessage(event);
+        }
       }
     }
-  }
-  // Handle TEST events from the Meta dashboard
-  else if (payload.field === "messages" && payload.value) {
-    console.log("This is a TEST event from Meta dashboard.");
-    const testEvent = {
-      sender: { id: payload.value.sender.id },
-      recipient: { id: payload.value.recipient.id },
-      timestamp: payload.value.timestamp * 1000, // Convert to ms
-      message: {
-        mid: payload.value.message.mid,
-        text: payload.value.message.text,
-        is_echo: false,
-      },
-    };
-    await handleMessage(testEvent);
   }
 }

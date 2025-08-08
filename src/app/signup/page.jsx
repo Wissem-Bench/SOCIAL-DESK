@@ -1,5 +1,3 @@
-// File: src/app/signup/page.jsx (Optimized Version)
-
 "use client";
 
 import { useState } from "react";

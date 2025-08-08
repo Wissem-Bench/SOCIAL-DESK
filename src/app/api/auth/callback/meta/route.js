@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
+  // --- get the userAccessToken ---
   const cookieStore = cookies();
   const supabase = await createClient(cookieStore);
 
@@ -47,6 +48,20 @@ export async function GET(request) {
       throw new Error("Could not fetch user ID from Meta.");
     }
 
+    // 1. Get the user's pages
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
+    );
+    const pagesData = await pagesResponse.json();
+
+    if (!pagesData.data || pagesData.data.length === 0) {
+      throw new Error("No Facebook pages found for this user.");
+    }
+
+    // For now, we take the first page found.
+    const page = pagesData.data[0];
+    const pageId = page.id;
+
     // --- Store information in social_connections ---
     const auth = supabase.auth;
     const {
@@ -65,9 +80,10 @@ export async function GET(request) {
       .upsert(
         {
           user_id: user.id,
-          platform: "facebook", // Note: The process is the same for Instagram, Meta handles them together here.
+          platform: "facebook", // The process is the same for Instagram, Meta handles them together here.
           access_token: userAccessToken, // Don't forget to encrypt this token in production!
           platform_user_id: platformUserId,
+          platform_page_id: pageId, // This is the page's ID
         },
         {
           onConflict: "user_id, platform", // Tells which unique constraint to check

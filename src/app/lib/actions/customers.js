@@ -136,3 +136,32 @@ export async function archiveCustomer(customerId) {
     return { error: "Failed to archive customer." };
   }
 }
+
+// very similar to getCustomerDetails, but tailored for the inbox context.
+export async function getCustomerDetailsForInbox(customerId) {
+  const supabase = await createClient();
+  const auth = supabase.auth;
+  const {
+    data: { user },
+  } = await auth.getUser();
+  if (!user) return { error: "Action non autorisée." };
+
+  const { data, error } = await supabase
+    .from("customers")
+    .select(
+      `
+      *,
+      orders ( id, order_number, order_date, total_amount, status )
+    `
+    )
+    .eq("id", customerId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) {
+    console.error("getCustomerDetailsForInbox Error:", error);
+    return { error: "Impossible de récupérer les détails du client." };
+  }
+
+  return { customer: data };
+}

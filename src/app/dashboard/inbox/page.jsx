@@ -1,4 +1,4 @@
-import { getConversations } from "@/app/lib/actions/meta";
+import { getConversationsFromDB } from "@/app/lib/actions/conversations";
 import { getProductsForUser } from "@/app/lib/actions/products";
 import InboxClientComponent from "./InboxClientComponent";
 
@@ -7,7 +7,7 @@ export default async function InboxPage() {
   const [
     { conversations, error: convosError },
     { products, error: productsError },
-  ] = await Promise.all([getConversations(), getProductsForUser()]);
+  ] = await Promise.all([getConversationsFromDB(), getProductsForUser()]);
 
   const error = convosError || productsError;
 

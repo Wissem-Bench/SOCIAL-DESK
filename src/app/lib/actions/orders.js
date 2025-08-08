@@ -44,7 +44,6 @@ export async function getOrdersForUser() {
     console.error("Erreur BDD:", error.message);
     return { error: "Impossible de récupérer les commandes." };
   }
-  console.log("data", data[7].order_items);
   return { orders: data };
 }
 
