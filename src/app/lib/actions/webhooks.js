@@ -16,35 +16,15 @@ async function handleNewMessage(supabase, messageEvent) {
     .eq("platform_page_id", pageId)
     .single();
 
-  if (connError || !connection) {
+  if (connError || !connection || !connection.access_token) {
     console.error(
-      `[FAIL] No user found for Page ID ${pageId}. Check social_connections table. Error:`,
+      `[FAIL] No connection or access_token found for Page ID ${pageId}. Check social_connections table. Error:`,
       connError
     );
     return;
   }
   const userId = connection.user_id;
-  const access_token = connection.access_token;
-  const meResponse = await fetch(
-    `https://graph.facebook.com/${customerPlatformId}?fields=name,profile_pic_url&access_token=${access_token}`
-  );
-
-  if (!meResponse.ok) {
-    throw new Error(
-      `Facebook API request failed with status ${meResponse.status}`
-    );
-  }
-  const meData = await meResponse.json();
-
-  if (!meData.name) {
-    throw new Error("Could not fetch Full Name from Meta.");
-  }
-  console.log("meData",meData)
-  const Fullname = meData.name;
-
-  if (!Fullname) {
-    throw new Error("Could not fetch Full Name from Meta.");
-  }
+  const pageAccessToken = connection.access_token;
 
   // 2. Find or create the customer profile
   const { data: customer, error: custError } = await supabase
@@ -54,7 +34,8 @@ async function handleNewMessage(supabase, messageEvent) {
         user_id: userId,
         platform_customer_id: customerPlatformId,
         platform: "facebook",
-        full_name: Fullname,
+        full_name: customerName,
+        profile_pic_url: customerProfilePic // Optionally save the profile picture
       },
       { onConflict: "user_id, platform_customer_id, platform" }
     )
