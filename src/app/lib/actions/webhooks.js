@@ -16,13 +16,14 @@ async function handleNewMessage(supabase, messageEvent) {
 
   // 1. Find which of our users this message belongs to, using the Page ID
   console.log(
-    `[Checkpoint 2] Searching for user connected to Page ID: ${pageId}...`
+    `[Checkpoint 2] Searching for user connected to Page ID: ${pageId}***`
   );
 
   let connection = null,
     connError = null;
 
   try {
+    console.log("supabase", supabase);
     const { data, error } = await supabase
       .from("social_connections")
       .select("user_id")
