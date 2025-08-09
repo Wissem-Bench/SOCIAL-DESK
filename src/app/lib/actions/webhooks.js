@@ -3,7 +3,6 @@
 async function handleNewMessage(supabase, messageEvent) {
   // Ignore messages sent by the page itself (echoes)
   if (messageEvent.message && messageEvent.message.is_echo) {
-    console.log("Webhook: Ignoring echo message.");
     return;
   }
 
@@ -13,7 +12,7 @@ async function handleNewMessage(supabase, messageEvent) {
   // 1. Find which of our users this message belongs to, using the Page ID
   const { data: connection, error: connError } = await supabase
     .from("social_connections")
-    .select("user_id")
+    .select("user_id, access_token")
     .eq("platform_page_id", pageId)
     .single();
 
@@ -25,6 +24,16 @@ async function handleNewMessage(supabase, messageEvent) {
     return;
   }
   const userId = connection.user_id;
+  const access_token = connection.access_token;
+  const meResponse = await fetch(
+      `https://graph.facebook.com/{customerPlatformId}?fields=name,profile_pic&access_token=${access_token}`
+    );
+    const meData = await meResponse.json();
+    const Fullname = meData.id;
+
+    if (!Fullname) {
+      throw new Error("Could not fetch Full Name from Meta.");
+    }
 
   // 2. Find or create the customer profile
   const { data: customer, error: custError } = await supabase
@@ -34,7 +43,7 @@ async function handleNewMessage(supabase, messageEvent) {
         user_id: userId,
         platform_customer_id: customerPlatformId,
         platform: "facebook",
-        full_name: `Client ${customerPlatformId.substring(0, 4)}`, // Placeholder name
+        full_name: Fullname,
       },
       { onConflict: "user_id, platform_customer_id, platform" }
     )
@@ -45,10 +54,8 @@ async function handleNewMessage(supabase, messageEvent) {
     console.error(`[FAIL] Could not upsert customer.`, custError);
     return;
   }
-  console.log(`[Checkpoint 5] Customer OK. DB ID: ${customer.id}`);
 
   // 3. Find or create the conversation thread
-  console.log(`[Checkpoint 6] Upserting conversation...`);
   const { data: conversation, error: convoError } = await supabase
     .from("conversations")
     .upsert(
@@ -69,12 +76,8 @@ async function handleNewMessage(supabase, messageEvent) {
     console.error("Webhook: Error upserting conversation:", convoError);
     return;
   }
-  console.log(`[Checkpoint 7] Conversation OK. DB ID: ${conversation.id}`);
 
   // 4. Insert the new message, avoiding duplicates
-  console.log(
-    `[Checkpoint 8] Inserting message with platform ID: ${messageEvent.message.mid}`
-  );
   const { error: msgError } = await supabase.from("messages").insert({
     conversation_id: conversation.id,
     platform_message_id: messageEvent.message.mid,
@@ -88,10 +91,6 @@ async function handleNewMessage(supabase, messageEvent) {
   // Ignore duplicate message errors (code 23505), as Meta can send events more than once
   if (msgError && msgError.code !== "23505") {
     console.error("Webhook: Error inserting message:", msgError);
-  } else {
-    console.log(
-      `Successfully processed message ${messageEvent.message.mid} for conversation ${conversation.id}`
-    );
   }
 }
 

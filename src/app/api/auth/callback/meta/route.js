@@ -61,9 +61,6 @@ export async function GET(request) {
     // For now, we take the first page found.
     const page = pagesData.data[0];
     const pageId = page.id;
-    console.log(
-      `OAuth Callback: Found Page ID ${pageId} for User ${platformUserId}`
-    );
 
     // --- Store information in social_connections ---
     // --- Step 4: Get the Supabase user ---
