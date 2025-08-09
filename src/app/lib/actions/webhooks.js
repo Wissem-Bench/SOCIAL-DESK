@@ -24,6 +24,8 @@ async function handleNewMessage(supabase, messageEvent) {
     .eq("platform_page_id", pageId)
     .single();
 
+  console.log("connection", connection);
+
   if (connError || !connection) {
     console.error(
       `[FAIL] No user found for Page ID ${pageId}. Check social_connections table. Error:`,

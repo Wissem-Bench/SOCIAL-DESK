@@ -22,6 +22,7 @@ export async function GET(request) {
   const redirectUri = process.env.NEXT_PUBLIC_META_REDIRECT_URI;
 
   try {
+    // --- Step 1: Exchange code for a user access token ---
     const tokenResponse = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`
     );
@@ -36,8 +37,7 @@ export async function GET(request) {
     // For now, we're storing The short-lived token, it must be exchanged for a long-lived token.
     const userAccessToken = tokenData.access_token;
 
-    // --- Obtain the user's ID on the platform ---
-    // Using the user token, we ask Meta "Who is this user?" to obtain their ID.
+    // --- Step 2: Get the user's platform ID ---
     const meResponse = await fetch(
       `https://graph.facebook.com/me?access_token=${userAccessToken}`
     );
@@ -48,7 +48,7 @@ export async function GET(request) {
       throw new Error("Could not fetch user ID from Meta.");
     }
 
-    // 1. Get the user's pages
+    // --- Step 3: Get the user's managed pages to find the Page ID ---
     const pagesResponse = await fetch(
       `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
     );
@@ -61,8 +61,12 @@ export async function GET(request) {
     // For now, we take the first page found.
     const page = pagesData.data[0];
     const pageId = page.id;
+    console.log(
+      `OAuth Callback: Found Page ID ${pageId} for User ${platformUserId}`
+    );
 
     // --- Store information in social_connections ---
+    // --- Step 4: Get the Supabase user ---
     const auth = supabase.auth;
     const {
       data: { user },
@@ -73,6 +77,7 @@ export async function GET(request) {
       throw new Error("Could not find an authenticated Supabase user.");
     }
 
+    // --- Step 5: Upsert the connection with all IDs ---
     // If a connection for this user and platform doesn't exist, it creates one.
     // If it already exists, it updates it (with a new token).
     const { error: upsertError } = await supabase
