@@ -26,14 +26,25 @@ async function handleNewMessage(supabase, messageEvent) {
   const userId = connection.user_id;
   const access_token = connection.access_token;
   const meResponse = await fetch(
-      `https://graph.facebook.com/${customerPlatformId}?fields=name,profile_pic&access_token=${access_token}`
-    );
-    const meData = await meResponse.json();
-    const Fullname = meData.id;
+    `https://graph.facebook.com/${customerPlatformId}?fields=name,profile_pic_url&access_token=${access_token}`
+  );
 
-    if (!Fullname) {
-      throw new Error("Could not fetch Full Name from Meta.");
-    }
+  if (!meResponse.ok) {
+    throw new Error(
+      `Facebook API request failed with status ${meResponse.status}`
+    );
+  }
+  const meData = await meResponse.json();
+
+  if (!meData.name) {
+    throw new Error("Could not fetch Full Name from Meta.");
+  }
+  console.log("meData",meData)
+  const Fullname = meData.name;
+
+  if (!Fullname) {
+    throw new Error("Could not fetch Full Name from Meta.");
+  }
 
   // 2. Find or create the customer profile
   const { data: customer, error: custError } = await supabase
