@@ -26,7 +26,7 @@ async function handleNewMessage(supabase, messageEvent) {
   const userId = connection.user_id;
   const access_token = connection.access_token;
   const meResponse = await fetch(
-      `https://graph.facebook.com/{customerPlatformId}?fields=name,profile_pic&access_token=${access_token}`
+      `https://graph.facebook.com/${customerPlatformId}?fields=name,profile_pic&access_token=${access_token}`
     );
     const meData = await meResponse.json();
     const Fullname = meData.id;
