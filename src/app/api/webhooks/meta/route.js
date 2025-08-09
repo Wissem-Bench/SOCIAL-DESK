@@ -39,8 +39,10 @@ export async function POST(request) {
   const supabase = await createClient(cookieStore);
 
   try {
+    console.log("body", body);
     const data = JSON.parse(body);
     // We don't await this to respond quickly to Meta
+    console.log("parsed meta data", data);
     processWebhookEvent(supabase, data);
   } catch (e) {
     console.error("Webhook POST Error:", e);
