@@ -66,8 +66,8 @@ async function handleNewMessage(supabase, messageEvent) {
         user_id: userId,
         platform_customer_id: customerPlatformId,
         platform: "facebook",
-        full_name: customerName, // Use the fetched name
-        profile_pic_url: customerProfilePic, // Optionally save the profile picture
+        full_name: customerName,
+        // profile_pic_url: customerProfilePic // <-- METS CETTE LIGNE EN COMMENTAIRE
       },
       { onConflict: "user_id, platform_customer_id, platform" }
     )
