@@ -43,7 +43,7 @@ export async function POST(request) {
     const data = JSON.parse(body);
     // We don't await this to respond quickly to Meta
     console.log("parsed meta data", data);
-    processWebhookEvent(supabase, data);
+    await processWebhookEvent(supabase, data);
   } catch (e) {
     console.error("Webhook POST Error:", e);
   }
