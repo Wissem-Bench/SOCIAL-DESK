@@ -18,13 +18,28 @@ async function handleNewMessage(supabase, messageEvent) {
   console.log(
     `[Checkpoint 2] Searching for user connected to Page ID: ${pageId}...`
   );
-  const { data: connection, error: connError } = await supabase
-    .from("social_connections")
-    .select("user_id")
-    .eq("platform_page_id", pageId)
-    .single();
 
-  console.log("connection", connection);
+  let connection = null,
+    connError = null;
+
+  try {
+    const { data, error } = await supabase
+      .from("social_connections")
+      .select("user_id")
+      .eq("platform_page_id", pageId)
+      .single();
+
+    if (error) {
+      console.error("Supabase query error:", error);
+      connError = error;
+    } else {
+      connection = data;
+      console.log("Connection found:", connection);
+      throw new Error("Connection found, proceeding with user ID.");
+    }
+  } catch (err) {
+    console.error("Unexpected error during Supabase query:", err);
+  }
 
   if (connError || !connection) {
     console.error(
