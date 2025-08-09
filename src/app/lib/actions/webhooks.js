@@ -10,52 +10,21 @@ async function handleNewMessage(supabase, messageEvent) {
   const pageId = messageEvent.recipient.id;
   const customerPlatformId = messageEvent.sender.id;
 
-  console.log(
-    `[Checkpoint 1] Processing message from ${customerPlatformId} to Page ${pageId}`
-  );
-
   // 1. Find which of our users this message belongs to, using the Page ID
-  console.log(
-    `[Checkpoint 2] Searching for user connected to Page ID: ${pageId}***`
-  );
-
-  let connection = null,
-    connError = null;
-
-  try {
-    console.log("supabase", supabase);
-    const { data, error } = await supabase
-      .from("social_connections")
-      .select("user_id")
-      .eq("platform_page_id", pageId)
-      .single();
-
-    if (error) {
-      console.error("Supabase query error:", error);
-      connError = error;
-    } else {
-      connection = data;
-      console.log("Connection found:", connection);
-      throw new Error("Connection found, proceeding with user ID.");
-    }
-  } catch (err) {
-    console.error("Unexpected error during Supabase query:", err);
-  }
+  const { data: connection, error: connError } = await supabase
+    .from("social_connections")
+    .select("user_id")
+    .eq("platform_page_id", pageId)
+    .single();
 
   if (connError || !connection) {
     console.error(
       `[FAIL] No user found for Page ID ${pageId}. Check social_connections table. Error:`,
       connError
     );
-    console.error(
-      "Webhook: Could not find user for page ID:",
-      pageId,
-      connError
-    );
     return;
   }
   const userId = connection.user_id;
-  console.log(`[Checkpoint 3] Found User ID: ${userId}`);
 
   // 2. Find or create the customer profile
   const { data: customer, error: custError } = await supabase
@@ -123,9 +92,6 @@ async function handleNewMessage(supabase, messageEvent) {
     console.log(
       `Successfully processed message ${messageEvent.message.mid} for conversation ${conversation.id}`
     );
-    console.log(
-      `[SUCCESS] Message ${messageEvent.message.mid} processed successfully.`
-    );
   }
 }
 
@@ -139,5 +105,4 @@ export async function processWebhookEvent(supabase, payload) {
       }
     }
   }
-  console.log("[END] processWebhookEvent function finished.");
 }
