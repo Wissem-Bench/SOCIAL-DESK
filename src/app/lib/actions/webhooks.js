@@ -12,19 +12,19 @@ async function handleNewMessage(supabase, messageEvent) {
   // 1. --- Find our user AND the required Page Access Token ---
   const { data: connection, error: connError } = await supabase
     .from("social_connections")
-    .select("user_id, page_access_token") // Select the token as well
+    .select("user_id, access_token") // Select the token as well
     .eq("platform_page_id", pageId)
     .single();
 
-  if (connError || !connection || !connection.page_access_token) {
+  if (connError || !connection || !connection.access_token) {
     console.error(
-      `[FAIL] No connection or page_access_token found for Page ID ${pageId}. Check social_connections table. Error:`,
+      `[FAIL] No connection or access_token found for Page ID ${pageId}. Check social_connections table. Error:`,
       connError
     );
     return;
   }
   const userId = connection.user_id;
-  const pageAccessToken = connection.page_access_token;
+  const pageAccessToken = connection.access_token;
 
   // 2. --- NEW: Fetch customer's real name from Meta API ---
   let customerName = `Client ${customerPlatformId.substring(0, 4)}`; // Fallback name
@@ -34,20 +34,28 @@ async function handleNewMessage(supabase, messageEvent) {
     const apiVersion = "v20.0"; // It's good practice to version your API calls
     const fields = "name,profile_pic";
     const url = `https://graph.facebook.com/${apiVersion}/${customerPlatformId}?fields=${fields}&access_token=${pageAccessToken}`;
-    
+
     const response = await fetch(url);
     const profileData = await response.json();
 
     if (response.ok && profileData.name) {
       customerName = profileData.name;
       customerProfilePic = profileData.profile_pic;
-      console.log(`[SUCCESS] Fetched name for customer ${customerPlatformId}: ${customerName}`);
+      console.log(
+        `[SUCCESS] Fetched name for customer ${customerPlatformId}: ${customerName}`
+      );
     } else {
       // Log Meta's error response if the fetch was not successful
-      console.warn(`[WARN] Could not fetch name for customer ${customerPlatformId}. API response:`, profileData.error || profileData);
+      console.warn(
+        `[WARN] Could not fetch name for customer ${customerPlatformId}. API response:`,
+        profileData.error || profileData
+      );
     }
   } catch (apiError) {
-    console.error(`[FAIL] API call to Meta failed for customer ${customerPlatformId}.`, apiError);
+    console.error(
+      `[FAIL] API call to Meta failed for customer ${customerPlatformId}.`,
+      apiError
+    );
   }
 
   // 3. --- Find or create the customer profile using the REAL name ---
@@ -59,7 +67,7 @@ async function handleNewMessage(supabase, messageEvent) {
         platform_customer_id: customerPlatformId,
         platform: "facebook",
         full_name: customerName, // Use the fetched name
-        profile_pic_url: customerProfilePic // Optionally save the profile picture
+        profile_pic_url: customerProfilePic, // Optionally save the profile picture
       },
       { onConflict: "user_id, platform_customer_id, platform" }
     )
@@ -106,5 +114,17 @@ async function handleNewMessage(supabase, messageEvent) {
 
   if (msgError && msgError.code !== "23505") {
     console.error("Webhook: Error inserting message:", msgError);
+  }
+}
+
+export async function processWebhookEvent(supabase, payload) {
+  if (payload.object === "page" && payload.entry) {
+    for (const entry of payload.entry) {
+      for (const event of entry.messaging) {
+        if (event.message) {
+          await handleNewMessage(supabase, event);
+        }
+      }
+    }
   }
 }
