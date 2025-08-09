@@ -2,14 +2,13 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 
-async function handleNewMessage(messageEvent) {
+async function handleNewMessage(supabase, messageEvent) {
   // Ignore messages sent by the page itself (echoes)
   if (messageEvent.message && messageEvent.message.is_echo) {
     console.log("Webhook: Ignoring echo message.");
     return;
   }
 
-  const supabase = createClient();
   const pageId = messageEvent.recipient.id;
   const customerPlatformId = messageEvent.sender.id;
 
@@ -93,12 +92,12 @@ async function handleNewMessage(messageEvent) {
   }
 }
 
-export async function processWebhookEvent(payload) {
+export async function processWebhookEvent(supabase, payload) {
   if (payload.object === "page" && payload.entry) {
     for (const entry of payload.entry) {
       for (const event of entry.messaging) {
         if (event.message) {
-          await handleNewMessage(event);
+          await handleNewMessage(supabase, event);
         }
       }
     }

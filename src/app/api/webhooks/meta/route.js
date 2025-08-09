@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { processWebhookEvent } from "@/app/lib/actions/webhooks";
+import { createClient } from "@/app/lib/supabase/server";
+import { cookies } from "next/headers";
 
 // Meta webhook verification (GET)
 export async function GET(request) {
@@ -33,10 +35,13 @@ export async function POST(request) {
     return new NextResponse("Invalid signature", { status: 401 });
   }
 
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+
   try {
     const data = JSON.parse(body);
     // We don't await this to respond quickly to Meta
-    processWebhookEvent(data);
+    processWebhookEvent(supabase, data);
   } catch (e) {
     console.error("Webhook POST Error:", e);
   }
