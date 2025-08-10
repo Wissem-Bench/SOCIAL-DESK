@@ -37,8 +37,7 @@ async function handleNewMessage(supabase, messageEvent) {
 
     const response = await fetch(url);
     const profileData = await response.json();
-    console.log("response", response);
-    console.log("profileData", profileData);
+    
     if (response.ok && profileData.name) {
       customerName = profileData.name;
       // customerProfilePic = profileData.profile_pic;
