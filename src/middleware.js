@@ -39,7 +39,6 @@ export async function middleware(request) {
 
   const { pathname } = request.nextUrl;
 
-  // Logical redirections
   if (!session && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

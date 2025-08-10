@@ -2,8 +2,45 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 
+export async function checkMetaConnection() {
+  const supabase = await createClient();
+  const auth = supabase.auth;
+  const {
+    data: { user },
+  } = await auth.getUser();
+
+  const connectionResult = await supabase
+    .from("social_connections")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const { count, error: connectionError } = connectionResult;
+
+  if (connectionError) {
+    console.error("Meta Connection Error:", connectionError);
+  }
+  return count;
+}
+
 export async function getAdvancedDashboardStats(period = "last_30_days") {
   const supabase = await createClient();
+  const auth = supabase.auth;
+  const {
+    data: { user },
+  } = await auth.getUser();
+
+  const connectionResult = await supabase
+    .from("social_connections")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const { count, error: connectionError } = connectionResult;
+
+  console.log("count", count);
+
+  if (connectionError) {
+    console.error("Connection Error:", connectionError);
+  }
 
   const { data, error } = await supabase.rpc("get_advanced_dashboard_stats", {
     p_period: period,
@@ -14,7 +51,7 @@ export async function getAdvancedDashboardStats(period = "last_30_days") {
     return { error: "Failed to load advanced dashboard statistics." };
   }
 
-  return { stats: data };
+  return { stats: { ...data, count } };
 }
 
 export async function getRecentActivity() {

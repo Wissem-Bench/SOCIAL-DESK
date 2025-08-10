@@ -11,6 +11,7 @@ import PlatformChart from "./charts/PlatformChart";
 import TopProductsChart from "./charts/TopProductsChart";
 import PeriodSelector from "./PeriodSelector";
 import ActivityFeed from "./charts/ActivityFeed";
+import ConnectMetaCard from "@/app/meta/ConnectMetaCard";
 
 // Helper to format numbers as currency (TND)
 const currencyFormatter = (number) => {
@@ -51,7 +52,6 @@ export default function DashboardPage() {
         getAdvancedDashboardStats(period),
         getRecentActivity(), // Activity feed is independent of the period for now
       ]);
-
       if (statsResult.error) throw new Error(statsResult.error);
       if (activityResult.error) throw new Error(activityResult.error);
 
@@ -76,6 +76,10 @@ export default function DashboardPage() {
         </div>
       </div>
     );
+  }
+
+  if (stats.count === 0) {
+    return <ConnectMetaCard />;
   }
 
   return (
