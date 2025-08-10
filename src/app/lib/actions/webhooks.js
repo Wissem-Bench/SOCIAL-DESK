@@ -28,19 +28,20 @@ async function handleNewMessage(supabase, messageEvent) {
 
   // 2. --- NEW: Fetch customer's real name from Meta API ---
   let customerName = `Client ${customerPlatformId.substring(0, 4)}`; // Fallback name
-  let customerProfilePic = null; // Optional: To store profile picture URL
+  // let customerProfilePic = null; // Optional: To store profile picture URL
 
   try {
     // const apiVersion = "v23.0"; // It's good practice to version your API calls
-    const fields = "name,profile_pic";
+    const fields = "name";
     const url = `https://graph.facebook.com/${customerPlatformId}?fields=${fields}&access_token=${pageAccessToken}`;
 
     const response = await fetch(url);
     const profileData = await response.json();
-
+    console.log("response", response);
+    console.log("profileData", profileData);
     if (response.ok && profileData.name) {
       customerName = profileData.name;
-      customerProfilePic = profileData.profile_pic;
+      // customerProfilePic = profileData.profile_pic;
       console.log(
         `[SUCCESS] Fetched name for customer ${customerPlatformId}: ${customerName}`
       );
