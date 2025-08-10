@@ -9,45 +9,39 @@ async function handleNewMessage(supabase, messageEvent) {
   const pageId = messageEvent.recipient.id;
   const customerPlatformId = messageEvent.sender.id;
 
-  // 1. --- Find our user AND the required Page Access Token ---
+  // 1. Find our user AND the page_access_token linked to this page ID
   const { data: connection, error: connError } = await supabase
     .from("social_connections")
-    .select("user_id, access_token") // Select the token as well
+    .select("user_id, page_access_token") // <-- We now select the page token
     .eq("platform_page_id", pageId)
     .single();
 
-  if (connError || !connection || !connection.access_token) {
+  if (connError || !connection) {
+    /* ... */ return;
+  }
+
+  const userId = connection.user_id;
+  const pageAccessToken = connection.page_access_token; // <-- We get the token here
+
+  if (!pageAccessToken) {
     console.error(
-      `[FAIL] No connection or access_token found for Page ID ${pageId}. Check social_connections table. Error:`,
-      connError
+      `Webhook: Missing page_access_token for page ${pageId}. Please re-authenticate.`
     );
     return;
   }
-  const userId = connection.user_id;
-  const pageAccessToken = connection.access_token;
 
-  // 2. --- NEW: Fetch customer's real name from Meta API ---
+  // 2. Fetch customer's real name from Meta API using the PAGE ACCESS TOKEN
   let customerName = `Client ${customerPlatformId.substring(0, 4)}`; // Fallback name
-  // let customerProfilePic = null; // Optional: To store profile picture URL
-
   try {
-    // const apiVersion = "v23.0"; // It's good practice to version your API calls
-    const fields = "name";
-    const url = `https://graph.facebook.com/${customerPlatformId}?fields=${fields}&access_token=${pageAccessToken}`;
-
+    const url = `https://graph.facebook.com/${customerPlatformId}?fields=name&access_token=${pageAccessToken}`;
     const response = await fetch(url);
     const profileData = await response.json();
-    
+
     if (response.ok && profileData.name) {
       customerName = profileData.name;
-      // customerProfilePic = profileData.profile_pic;
-      console.log(
-        `[SUCCESS] Fetched name for customer ${customerPlatformId}: ${customerName}`
-      );
     } else {
-      // Log Meta's error response if the fetch was not successful
       console.warn(
-        `[WARN] Could not fetch name for customer ${customerPlatformId}. API response:`,
+        `[WARN] Could not fetch name for customer ${customerPlatformId}.`,
         profileData.error || profileData
       );
     }
@@ -58,7 +52,7 @@ async function handleNewMessage(supabase, messageEvent) {
     );
   }
 
-  // 3. --- Find or create the customer profile using the REAL name ---
+  // 3. Find or create the customer profile using the REAL name
   const { data: customer, error: custError } = await supabase
     .from("customers")
     .upsert(
@@ -66,8 +60,7 @@ async function handleNewMessage(supabase, messageEvent) {
         user_id: userId,
         platform_customer_id: customerPlatformId,
         platform: "facebook",
-        full_name: customerName,
-        // profile_pic_url: customerProfilePic // <-- METS CETTE LIGNE EN COMMENTAIRE
+        full_name: customerName, // Use the fetched name
       },
       { onConflict: "user_id, platform_customer_id, platform" }
     )

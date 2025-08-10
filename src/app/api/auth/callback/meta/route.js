@@ -44,25 +44,18 @@ export async function GET(request) {
     const meData = await meResponse.json();
     const platformUserId = meData.id;
 
-    if (!platformUserId) {
-      throw new Error("Could not fetch user ID from Meta.");
-    }
-
-    // --- Step 3: Get the user's managed pages to find the Page ID ---
+    // --- Step 3: Get the user's managed pages to find the Page ID AND Page Access Token ---
     const pagesResponse = await fetch(
       `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
     );
     const pagesData = await pagesResponse.json();
+    if (!pagesData.data || pagesData.data.length === 0)
+      throw new Error("No pages found.");
 
-    if (!pagesData.data || pagesData.data.length === 0) {
-      throw new Error("No Facebook pages found for this user.");
-    }
-
-    // For now, we take the first page found.
     const page = pagesData.data[0];
     const pageId = page.id;
+    const pageAccessToken = page.access_token;
 
-    // --- Store information in social_connections ---
     // --- Step 4: Get the Supabase user ---
     const auth = supabase.auth;
     const {
@@ -84,6 +77,7 @@ export async function GET(request) {
           user_id: user.id,
           platform: "facebook", // The process is the same for Instagram, Meta handles them together here.
           access_token: userAccessToken, // Don't forget to encrypt this token in production!
+          page_access_token: pageAccessToken, // The Page's own token
           platform_user_id: platformUserId,
           platform_page_id: pageId, // This is the page's ID
         },

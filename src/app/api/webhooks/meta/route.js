@@ -22,40 +22,28 @@ export async function GET(request) {
 
 // Meta webhook events (POST)
 export async function POST(request) {
-  // const body = await request.text();
-  // const signature = request.headers.get("x-hub-signature-256") ?? "";
+  const body = await request.text();
+  const signature = request.headers.get("x-hub-signature-256") ?? "";
 
-  // // --- Signature verification ---
-  // const hmac = crypto.createHmac("sha256", process.env.META_APP_SECRET);
-  // hmac.update(body);
-  // const expectedSignature = `sha256=${hmac.digest("hex")}`;
+  // --- Signature verification ---
+  const hmac = crypto.createHmac("sha256", process.env.META_APP_SECRET);
+  hmac.update(body);
+  const expectedSignature = `sha256=${hmac.digest("hex")}`;
 
-  // if (signature !== expectedSignature) {
-  //   console.warn("Webhook signature verification failed!");
-  //   return new NextResponse("Invalid signature", { status: 401 });
-  // }
+  if (signature !== expectedSignature) {
+    console.warn("Webhook signature verification failed!");
+    return new NextResponse("Invalid signature", { status: 401 });
+  }
 
-  // const cookieStore = cookies();
-  // const supabase = await createClient(cookieStore);
-
-  // try {
-  //   const data = JSON.parse(body);
-  //   await processWebhookEvent(supabase, data);
-  // } catch (e) {
-  //   console.error("Webhook POST Error:", e);
-  // }
-
-  // return new NextResponse("EVENT_RECEIVED", { status: 200 });
-  console.log("--- META WEBHOOK: POST REQUEST RECEIVED ---");
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
 
   try {
-    const body = await request.text();
-    console.log("--- META WEBHOOK: RAW BODY ---");
-    console.log(body);
+    const data = JSON.parse(body);
+    await processWebhookEvent(supabase, data);
   } catch (e) {
-    console.error("--- META WEBHOOK: ERROR READING BODY ---", e);
+    console.error("Webhook POST Error:", e);
   }
-  
-  // We always respond with 200 OK during this test.
-  return new NextResponse('OK', { status: 200 });
+
+  return new NextResponse("EVENT_RECEIVED", { status: 200 });
 }
