@@ -31,9 +31,9 @@ async function handleNewMessage(supabase, messageEvent) {
   let customerProfilePic = null; // Optional: To store profile picture URL
 
   try {
-    const apiVersion = "v20.0"; // It's good practice to version your API calls
+    // const apiVersion = "v23.0"; // It's good practice to version your API calls
     const fields = "name,profile_pic";
-    const url = `https://graph.facebook.com/${apiVersion}/${customerPlatformId}?fields=${fields}&access_token=${pageAccessToken}`;
+    const url = `https://graph.facebook.com/${customerPlatformId}?fields=${fields}&access_token=${pageAccessToken}`;
 
     const response = await fetch(url);
     const profileData = await response.json();
