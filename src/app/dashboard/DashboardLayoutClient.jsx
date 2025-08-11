@@ -33,7 +33,7 @@ export default function DashboardLayoutClient({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen h-screen bg-gray-50 overflow-x-hidden">
       <div
         onMouseEnter={() => {
           if (!isMobile) setIsSidebarExpanded(true);
@@ -61,12 +61,11 @@ export default function DashboardLayoutClient({ children }) {
 
       {/* Main content area with dynamic padding */}
       <div
-        className={`transition-all duration-300 ease-in-out ${
-          isSidebarExpanded ? "md:pl-64" : "md:pl-20"
-        }`}
+        className={`transition-all duration-300 ease-in-out min-h-screen flex flex-col`}
+        style={{ paddingLeft: isSidebarExpanded ? "16rem" : "5rem" }}
       >
-        <TopNavbar onMenuToggle={handleMenuToggle} />
-        <main className="p-4 md:p-8">{children}</main>
+        <TopNavbar className="flex-shrink-0" onMenuToggle={handleMenuToggle} />
+        <main className="flex-1 p-4 md:p-6 overflow-hidden">{children}</main>
       </div>
     </div>
   );

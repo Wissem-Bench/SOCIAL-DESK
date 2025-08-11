@@ -165,3 +165,51 @@ export async function getCustomerDetailsForInbox(customerId) {
 
   return { customer: data };
 }
+
+export async function addProspectAsCustomer(
+  conversationId,
+  platformCustomerId,
+  platform,
+  name
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Action non autorisée." };
+
+  // Step 1: Create the new customer record
+  console.log("customer ADDED !!!!");
+  const { data: newCustomer, error: custError } = await supabase
+    .from("customers")
+    .insert({
+      user_id: user.id,
+      platform_customer_id: platformCustomerId,
+      platform: platform,
+      full_name: name,
+    })
+    .select()
+    .single();
+
+  if (custError) {
+    // Handle case where customer might have been created in another tab
+    if (custError.code === "23505") {
+      return { error: "Ce client existe déjà." };
+    }
+    return { error: "Impossible de créer le client." };
+  }
+
+  // Step 2: Update the conversation to link it to the new customer
+  // and clear the prospect_name
+  const { error: convoError } = await supabase
+    .from("conversations")
+    .update({ customer_id: newCustomer.id, prospect_name: null })
+    .eq("id", conversationId);
+
+  if (convoError) {
+    return { error: "Impossible de lier le client à la conversation." };
+  }
+
+  revalidatePath("/dashboard/inbox");
+  return { success: true, customer: newCustomer };
+}

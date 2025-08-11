@@ -12,7 +12,7 @@ async function handleNewMessage(supabase, messageEvent) {
   // 1. Find our user AND the page_access_token linked to this page ID
   const { data: connection, error: connError } = await supabase
     .from("social_connections")
-    .select("user_id, page_access_token") // <-- We now select the page token
+    .select("user_id, page_access_token")
     .eq("platform_page_id", pageId)
     .single();
 
@@ -30,47 +30,51 @@ async function handleNewMessage(supabase, messageEvent) {
     return;
   }
 
-  // 2. Fetch customer's real name from Meta API using the PAGE ACCESS TOKEN
-  let customerName = `Client ${customerPlatformId.substring(0, 4)}`; // Fallback name
+  // // 2. Fetch customer's real name from Meta API using the PAGE ACCESS TOKEN
+  // let customerName = `Client ${customerPlatformId.substring(0, 4)}`; // Fallback name
+  // try {
+  //   const url = `https://graph.facebook.com/${customerPlatformId}?fields=name&access_token=${pageAccessToken}`;
+  //   const response = await fetch(url);
+  //   const profileData = await response.json();
+
+  //   if (response.ok && profileData.name) {
+  //     customerName = profileData.name;
+  //   } else {
+  //     console.warn(
+  //       `[WARN] Could not fetch name for customer ${customerPlatformId}.`,
+  //       profileData.error || profileData
+  //     );
+  //   }
+  // } catch (apiError) {
+  //   console.error(
+  //     `[FAIL] API call to Meta failed for customer ${customerPlatformId}.`,
+  //     apiError
+  //   );
+  // }
+
+  // 2. Fetch the prospect's name from Meta API
+  let prospectName = `Prospect ${customerPlatformId.substring(0, 4)}`; // Fallback
+  console.log("prospectName", prospectName);
   try {
-    const url = `https://graph.facebook.com/${customerPlatformId}?fields=name&access_token=${pageAccessToken}`;
-    const response = await fetch(url);
-    const profileData = await response.json();
-
-    if (response.ok && profileData.name) {
-      customerName = profileData.name;
-    } else {
-      console.warn(
-        `[WARN] Could not fetch name for customer ${customerPlatformId}.`,
-        profileData.error || profileData
-      );
-    }
-  } catch (apiError) {
-    console.error(
-      `[FAIL] API call to Meta failed for customer ${customerPlatformId}.`,
-      apiError
+    const response = await fetch(
+      `https://graph.facebook.com/${customerPlatformId}?fields=name&access_token=${pageAccessToken}`
     );
+    const profileData = await response.json();
+    console.log("profileData", profileData);
+    if (response.ok && profileData.name) {
+      prospectName = profileData.name;
+    }
+  } catch (e) {
+    console.error("Failed to fetch prospect name", e);
   }
 
-  // 3. Find or create the customer profile using the REAL name
-  const { data: customer, error: custError } = await supabase
+  // 3. Check if this prospect is already a customer
+  const { data: existingCustomer } = await supabase
     .from("customers")
-    .upsert(
-      {
-        user_id: userId,
-        platform_customer_id: customerPlatformId,
-        platform: "facebook",
-        full_name: customerName, // Use the fetched name
-      },
-      { onConflict: "user_id, platform_customer_id, platform" }
-    )
-    .select()
+    .select("id")
+    .eq("user_id", userId)
+    .eq("platform_customer_id", customerPlatformId)
     .single();
-
-  if (custError) {
-    console.error(`[FAIL] Could not upsert customer.`, custError);
-    return;
-  }
 
   // 4. Find or create the conversation thread
   const { data: conversation, error: convoError } = await supabase
@@ -78,9 +82,10 @@ async function handleNewMessage(supabase, messageEvent) {
     .upsert(
       {
         user_id: userId,
-        customer_id: customer.id,
+        customer_id: existingCustomer?.id || null, // Link to customer if they exist
         platform: "facebook",
         platform_conversation_id: customerPlatformId,
+        prospect_name: existingCustomer ? null : prospectName, // Store name ONLY if they are not a customer
         status: "non lu",
         last_message_at: new Date(messageEvent.timestamp),
       },

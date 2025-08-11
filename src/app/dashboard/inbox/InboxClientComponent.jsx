@@ -68,55 +68,75 @@ export default function InboxClientComponent({
   }
 
   return (
-    <div className="flex h-[calc(100vh-65px)] bg-white border-t">
-      {/* Left Panel: Conversation List */}
-      <div className="w-full md:w-1/4 border-r border-gray-200 overflow-y-auto">
-        {conversations.map((convo) => (
-          <div
-            key={convo.id}
-            onClick={() => setSelectedConversation(convo)}
-            className={`p-4 cursor-pointer border-l-4 ${
-              selectedConversation?.id === convo.id
-                ? "border-blue-500 bg-gray-50"
-                : "border-transparent hover:bg-gray-50"
-            }`}
-          >
-            <div className="flex justify-between items-center">
-              <p className="font-semibold">
-                {convo.customers?.full_name || "Client inconnu"}
+    <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-white border-t">
+      {/* Left Panel */}
+      <div className="w-full md:w-1/4 flex-shrink-0 border-r border-gray-200 flex flex-col min-w-0">
+        <div className="p-4 border-b">
+          <h2 className="font-bold">Conversations</h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {conversations.map((convo) => (
+            <div
+              key={convo.id}
+              onClick={() => setSelectedConversation(convo)}
+              className={`p-4 cursor-pointer border-l-4 ${
+                selectedConversation?.id === convo.id
+                  ? "border-blue-500 bg-gray-200"
+                  : "border-transparent hover:bg-gray-100"
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                <p className="font-semibold">
+                  {convo.customers?.full_name ||
+                    convo.prospect_name ||
+                    "Prospect inconnu"}
+                </p>
+                {convo.platform === "facebook" && <FacebookIcon />}
+                {convo.platform === "instagram" && <InstagramIcon />}
+              </div>
+              <p className="text-sm text-gray-600 truncate">
+                {convo.messages[convo.messages.length - 1]?.content || "..."}
               </p>
-              {convo.platform === "facebook" && <FacebookIcon />}
-              {convo.platform === "instagram" && <InstagramIcon />}
             </div>
-            <p className="text-sm text-gray-600 truncate">
-              {convo.messages[convo.messages.length - 1]?.content || "..."}
-            </p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Center Panel: Message Display */}
-      <div className="w-full md:w-1/2 flex flex-col">
+      {/* Center Panel */}
+      <div className="w-full md:flex-1 md:w-1/2 flex flex-col min-w-0">
         {selectedConversation ? (
           <>
-            <div className="p-4 border-b border-gray-200">
+            <div className="flex justify-between p-3 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-xl font-bold">
                 {selectedConversation.customers?.full_name}
               </h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
+              >
+                Créer une commande
+              </button>
             </div>
+
+            {/* zone des messages (DOIT scroller) */}
             <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-100">
               {selectedConversation.messages
+                .slice() // clone avant sort si nécessaire
                 .sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at))
                 .map((msg) => (
                   <div key={msg.id} className="flex">
                     <div
-                      className={`p-3 rounded-lg max-w-lg ${
+                      className={`p-3 rounded-lg max-w-lg break-words whitespace-pre-wrap ${
                         msg.sender_type === "vendeur"
                           ? "bg-blue-500 text-white ml-auto"
                           : "bg-white"
                       }`}
                     >
-                      <p>{msg.content}</p>
+                      {/* break-words + whitespace-pre-wrap évitent overflow horizontal */}
+                      <p className="break-words whitespace-pre-wrap">
+                        {msg.content}
+                      </p>
                       <p className="text-xs opacity-75 mt-1 text-right">
                         {format(new Date(msg.sent_at), "p", { locale: fr })}
                       </p>
@@ -124,13 +144,14 @@ export default function InboxClientComponent({
                   </div>
                 ))}
             </div>
-            <div className="p-4 border-t bg-white">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="w-full px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-              >
-                Créer une commande
-              </button>
+
+            <div className="p-4 border-t bg-white flex-shrink-0">
+              <input
+                type="text"
+                placeholder="Écrire une réponse..."
+                className="w-full p-2 border rounded-md"
+                disabled
+              />
             </div>
           </>
         ) : (
@@ -140,15 +161,18 @@ export default function InboxClientComponent({
         )}
       </div>
 
-      {/* Right Panel: Customer Context */}
-      <div className="hidden md:block md:w-1/4 border-l border-gray-200">
-        <ContextPanel
-          customerDetails={customerDetails}
-          isLoading={isContextLoading}
-        />
-      </div>
+      {/* Right Panel */}
+      <aside className="hidden md:flex md:w-1/4 flex-shrink-0 min-w-0">
+        <div className="h-full w-full overflow-y-auto">
+          <ContextPanel
+            conversation={selectedConversation}
+            customerDetails={customerDetails}
+            isLoading={isContextLoading}
+          />
+        </div>
+      </aside>
 
-      {/* Create Order Modal */}
+      {/* Modale */}
       {selectedConversation && selectedConversation.customers && (
         <CreateOrderModal
           isOpen={isModalOpen}

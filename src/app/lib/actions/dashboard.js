@@ -36,8 +36,6 @@ export async function getAdvancedDashboardStats(period = "last_30_days") {
 
   const { count, error: connectionError } = connectionResult;
 
-  console.log("count", count);
-
   if (connectionError) {
     console.error("Connection Error:", connectionError);
   }
