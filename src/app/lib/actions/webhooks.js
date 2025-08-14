@@ -54,13 +54,11 @@ async function handleNewMessage(supabase, messageEvent) {
 
   // 2. Fetch the prospect's name from Meta API
   let prospectName = `Prospect ${customerPlatformId.substring(0, 4)}`; // Fallback
-  console.log("prospectName", prospectName);
   try {
     const response = await fetch(
       `https://graph.facebook.com/${customerPlatformId}?fields=name&access_token=${pageAccessToken}`
     );
     const profileData = await response.json();
-    console.log("profileData", profileData);
     if (response.ok && profileData.name) {
       prospectName = profileData.name;
     }

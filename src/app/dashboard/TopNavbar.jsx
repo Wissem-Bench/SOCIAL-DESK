@@ -1,4 +1,5 @@
 "use client";
+import LogoutButton from "@/app/dashboard/LogoutButton";
 
 export default function TopNavbar({ onMenuToggle }) {
   return (
@@ -29,6 +30,7 @@ export default function TopNavbar({ onMenuToggle }) {
         {/* We can add other elements here later, like a user profile dropdown */}
         <div className="flex-1 flex justify-end">
           {/* Placeholder for future items */}
+          <LogoutButton />
         </div>
       </div>
     </header>

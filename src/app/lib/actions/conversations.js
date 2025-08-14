@@ -1,36 +1,23 @@
 "use server";
 
-import { createClient } from "@/app/lib/supabase/server";
+import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 
-export async function getConversationsFromDB() {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
+export async function getConversationsFromDB(filters = {}) {
+  const { supabase, user } = await getSupabaseWithUser();
 
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
-
-  // This powerful query fetches conversations and, for each one,
-  // it fetches the related customer's name and all related messages.
-  const { data, error } = await supabase
-    .from("conversations")
-    .select(
-      `
-      *,
-      customers ( full_name ),
-      messages ( * )
-    `
-    )
-    .eq("user_id", user.id)
-    .order("last_message_at", { ascending: false });
+  // All the complex query logic is now inside the PostgreSQL function.
+  // We just call it with the filters.
+  const { data, error } = await supabase.rpc("get_filtered_conversations", {
+    p_user_id: user.id,
+    p_platform: filters.platform || "all",
+    p_status: filters.status || "all",
+    p_order_status: filters.orderStatus || "all",
+  });
 
   if (error) {
-    console.error("Get Conversations from DB Error:", error);
+    console.error("RPC get_filtered_conversations Error:", error);
     return { error: "Impossible de charger les conversations." };
   }
-
+  // The RPC function returns an array of JSON objects, which matches the expected structure.
   return { conversations: data };
 }

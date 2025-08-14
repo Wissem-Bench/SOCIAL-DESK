@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getCustomerDetailsForInbox } from "@/app/lib/actions/customers";
-import CreateOrderModal from "./CreateOrderModal";
+import { getConversationsFromDB } from "@/app/lib/actions/conversations";
+import DraggableOrderPopup from "./DraggableOrderPopup";
 import ContextPanel from "./ContextPanel";
+import InboxToolbar from "./InboxToolbar";
 
-// Simple components for platform icons
 const FacebookIcon = () => (
   <svg
     className="w-5 h-5 text-blue-600"
@@ -27,17 +28,40 @@ const InstagramIcon = () => (
   </svg>
 );
 
-export default function InboxClientComponent({
-  conversations,
-  products,
-  error,
-}) {
+export default function InboxClientComponent({ products, error }) {
+  const [conversations, setConversations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [filters, setFilters] = useState({
+    platform: "all",
+    status: "all",
+    orderStatus: "all",
+  });
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // State for the right context panel
   const [customerDetails, setCustomerDetails] = useState(null);
   const [isContextLoading, setIsContextLoading] = useState(false);
+
+  // This useEffect fetches data whenever the filters change
+  useEffect(() => {
+    const loadConversations = async () => {
+      setIsLoading(true);
+      const { conversations: fetchedConvos, error } =
+        await getConversationsFromDB(filters);
+      if (!error) {
+        setConversations(fetchedConvos);
+        // If there's a selected convo, find it in the new list or select the first one
+        const currentSelected = fetchedConvos.find(
+          (c) => c.id === selectedConversation?.id
+        );
+        setSelectedConversation(currentSelected || fetchedConvos[0] || null);
+      }
+      setIsLoading(false);
+    };
+    loadConversations();
+  }, [filters]);
 
   // When a conversation is selected, fetch the customer details for the context panel
   useEffect(() => {
@@ -61,125 +85,141 @@ export default function InboxClientComponent({
   if (error) {
     return <p className="p-8 text-red-500 text-center">{error}</p>;
   }
-  if (!conversations || conversations.length === 0) {
-    return (
-      <p className="p-8 text-gray-500 text-center">Aucune conversation.</p>
-    );
-  }
 
   return (
-    <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-white border-t">
-      {/* Left Panel */}
-      <div className="w-full md:w-1/4 flex-shrink-0 border-r border-gray-200 flex flex-col min-w-0">
-        <div className="p-4 border-b">
-          <h2 className="font-bold">Conversations</h2>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {conversations.map((convo) => (
-            <div
-              key={convo.id}
-              onClick={() => setSelectedConversation(convo)}
-              className={`p-4 cursor-pointer border-l-4 ${
-                selectedConversation?.id === convo.id
-                  ? "border-blue-500 bg-gray-200"
-                  : "border-transparent hover:bg-gray-100"
-              }`}
-            >
-              <div className="flex justify-between items-center">
-                <p className="font-semibold">
-                  {convo.customers?.full_name ||
-                    convo.prospect_name ||
-                    "Prospect inconnu"}
-                </p>
-                {convo.platform === "facebook" && <FacebookIcon />}
-                {convo.platform === "instagram" && <InstagramIcon />}
-              </div>
-              <p className="text-sm text-gray-600 truncate">
-                {convo.messages[convo.messages.length - 1]?.content || "..."}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Center Panel */}
-      <div className="w-full md:flex-1 md:w-1/2 flex flex-col min-w-0">
-        {selectedConversation ? (
-          <>
-            <div className="flex justify-between p-3 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-xl font-bold">
-                {selectedConversation.customers?.full_name}
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-              >
-                Créer une commande
-              </button>
-            </div>
-
-            {/* zone des messages (DOIT scroller) */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-100">
-              {selectedConversation.messages
-                .slice() // clone avant sort si nécessaire
-                .sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at))
-                .map((msg) => (
-                  <div key={msg.id} className="flex">
-                    <div
-                      className={`p-3 rounded-lg max-w-lg break-words whitespace-pre-wrap ${
-                        msg.sender_type === "vendeur"
-                          ? "bg-blue-500 text-white ml-auto"
-                          : "bg-white"
-                      }`}
-                    >
-                      {/* break-words + whitespace-pre-wrap évitent overflow horizontal */}
-                      <p className="break-words whitespace-pre-wrap">
-                        {msg.content}
-                      </p>
-                      <p className="text-xs opacity-75 mt-1 text-right">
-                        {format(new Date(msg.sent_at), "p", { locale: fr })}
-                      </p>
-                    </div>
+    <div className="flex flex-col h-screen" style={{ maxHeight: "84vh" }}>
+      <header className="flex-shrink-0">
+        <h1 className="text-2xl font-bold p-4 bg-white border-b">
+          Boîte de Réception
+        </h1>
+      </header>
+      <InboxToolbar filters={filters} onFilterChange={setFilters} />
+      {/* This container will grow to fill the remaining space and holds our 3 panels */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel: Conversation List */}
+        <div className="w-full md:w-1/4 border-r border-gray-200 flex flex-col">
+          {/* This inner div will scroll if its content overflows */}
+          <div className="overflow-y-auto">
+            {conversations && conversations.length > 0 ? (
+              conversations.map((convo) => (
+                <div
+                  key={convo.id}
+                  onClick={() => setSelectedConversation(convo)}
+                  className={`p-4 cursor-pointer border-l-4 ${
+                    selectedConversation?.id === convo.id
+                      ? "border-blue-500 bg-gray-200"
+                      : "border-transparent hover:bg-gray-100"
+                  } flex justify-between items-center`}
+                >
+                  <div className="flex-1 overflow-hidden">
+                    <p className="font-semibold truncate">
+                      {convo.customers?.full_name ||
+                        convo.prospect_name ||
+                        "Prospect inconnu"}
+                    </p>
+                    <p className="text-sm text-gray-600 truncate">
+                      {convo.messages[convo.messages.length - 1]?.content ||
+                        "..."}
+                    </p>
                   </div>
-                ))}
-            </div>
-
-            <div className="p-4 border-t bg-white flex-shrink-0">
-              <input
-                type="text"
-                placeholder="Écrire une réponse..."
-                className="w-full p-2 border rounded-md"
-                disabled
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full bg-gray-100">
-            <p className="text-gray-500">Sélectionnez une conversation</p>
+                  <div className="flex-shrink-0 ml-4">
+                    {convo.platform === "facebook" && <FacebookIcon />}
+                    {convo.platform === "instagram" && <InstagramIcon />}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="p-4 text-gray-500">Aucune conversation.</p>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Center Panel */}
+        <div className="w-full md:flex-1 md:w-1/2 flex flex-col min-w-0">
+          {selectedConversation ? (
+            <>
+              <div className="flex justify-between p-4 border-b border-gray-200 flex-shrink-0">
+                <h2 className="text-xl font-bold">
+                  {selectedConversation.customers?.full_name ||
+                    selectedConversation.prospect_name}
+                </h2>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
+                >
+                  Créer une commande
+                </button>
+              </div>
+
+              {/* zone des messages (DOIT scroller) */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-100">
+                {selectedConversation.messages
+                  .slice() // clone avant sort si nécessaire
+                  .sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at))
+                  .map((msg) => (
+                    <div key={msg.id} className="flex">
+                      <div
+                        className={`p-3 rounded-lg max-w-lg break-words whitespace-pre-wrap ${
+                          msg.sender_type === "vendeur"
+                            ? "bg-blue-500 text-white ml-auto"
+                            : "bg-white"
+                        }`}
+                      >
+                        {/* break-words + whitespace-pre-wrap évitent overflow horizontal */}
+                        <p className="break-words whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
+                        <p className="text-xs opacity-75 mt-1 text-right">
+                          {format(new Date(msg.sent_at), "p", { locale: fr })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="p-4 border-t bg-white flex-shrink-0">
+                <input
+                  type="text"
+                  placeholder="Écrire une réponse..."
+                  className="w-full p-2 border rounded-md"
+                  disabled
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gray-100">
+              <p className="text-gray-500">Sélectionnez une conversation</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Panel */}
+        <div className="hidden md:block md:w-1/4">
+          {/* This div will scroll if its content overflows */}
+          <div className="h-full overflow-y-auto">
+            <ContextPanel
+              conversation={selectedConversation}
+              customerDetails={customerDetails}
+              isLoading={isContextLoading}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Right Panel */}
-      <aside className="hidden md:flex md:w-1/4 flex-shrink-0 min-w-0">
-        <div className="h-full w-full overflow-y-auto">
-          <ContextPanel
-            conversation={selectedConversation}
-            customerDetails={customerDetails}
-            isLoading={isContextLoading}
-          />
-        </div>
-      </aside>
-
-      {/* Modale */}
-      {selectedConversation && selectedConversation.customers && (
-        <CreateOrderModal
-          isOpen={isModalOpen}
+      {/* Draggable Order Popup */}
+      {isModalOpen && selectedConversation && (
+        <DraggableOrderPopup
           onClose={() => setIsModalOpen(false)}
           customer={{
-            id: selectedConversation.customers.platform_customer_id,
-            name: selectedConversation.customers.full_name,
+            // The customer ID for the order is our internal DB id if they are a customer,
+            // otherwise we can use the platform id to find/create them.
+            // Let's assume createFullOrder can handle a platform_customer_id.
+            id:
+              selectedConversation.customer_id ||
+              selectedConversation.platform_conversation_id,
+            name:
+              selectedConversation.customers?.full_name ||
+              selectedConversation.prospect_name,
           }}
           products={products}
         />

@@ -1,44 +1,15 @@
 "use server";
 
-import { createClient } from "@/app/lib/supabase/server";
+import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
 // ACTION TO RETRIEVE ALL USER ORDERS
-export async function getOrdersForUser() {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Vous devez être connecté." };
-  }
+export async function getOrdersForUser({ supabase, user }) {
   // a query that retrieves orders and associated customer information,
   // for each order, the items and associated product information.
   const { data, error } = await supabase.rpc("get_orders_with_items", {
     p_user_id: user.id,
   });
-
-  // const { data, error } = await supabase
-  //   .from("orders")
-  //   .select(
-  //     `
-  //     *,
-  //     order_number,
-  //     delivery_service,
-  //     tracking_number,
-  //     notes,
-  //     customers ( full_name ),
-  //     order_items (
-  //       quantity,
-  //       products!inner ( id, name, selling_price )
-  //     )
-  //   `
-  //   )
-  //   .eq("user_id", user.id)
-  //   .order("order_date", { ascending: false });
 
   if (error) {
     console.error("Erreur BDD:", error.message);
@@ -49,13 +20,7 @@ export async function getOrdersForUser() {
 
 // CREATE ORDER FROM CONVERSATION
 export async function createOrderFromConversation(customerDetails, orderItems) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) return { error: "Action non autorisée." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   if (!customerDetails || !orderItems || orderItems.length === 0) {
     return { error: "Données de commande invalides." };
@@ -85,15 +50,7 @@ export async function createOrderFromConversation(customerDetails, orderItems) {
 
 // ACTION TO UPDATE ORDER STATUS
 export async function updateOrderStatus(orderId, newStatus) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   // We call the PostgreSQL function that update order status and adjust stock simultaneously
   const { error } = await supabase.rpc("update_order_status_and_stock", {
@@ -118,19 +75,8 @@ export async function updateOrderStatus(orderId, newStatus) {
  * @returns {Promise<{success: boolean, error: object | null}>}
  */
 export async function updateFullOrder(orderId, data) {
-  const supabase = await createClient();
-
   try {
-    // Get the current authenticated user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      console.error("updateFullOrder: User not found.", userError);
-      return { success: false, error: { message: "User not authenticated." } };
-    }
+    const { supabase, user } = await getSupabaseWithUser();
 
     // Prepare the payload for the RPC (Remote Procedure Call)
     const payload = {
@@ -169,22 +115,16 @@ export async function updateFullOrder(orderId, data) {
 }
 
 export async function createFullOrder(data) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
+  const { supabase, user } = await getSupabaseWithUser();
 
-  if (!user) {
-    return { success: false, error: { message: "User not authenticated." } };
-  }
-
+  const delivery_service = data.delivery_service || "";
+  const tracking_number = data.tracking_number || "";
   const payload = {
     p_user_id: user.id,
     p_customer_id: data.customer_id,
     p_notes: data.notes,
-    p_delivery_service: data.delivery_service,
-    p_tracking_number: data.tracking_number,
+    p_delivery_service: delivery_service,
+    p_tracking_number: tracking_number,
     p_items: data.items,
   };
 
@@ -193,24 +133,21 @@ export async function createFullOrder(data) {
     payload
   );
 
+  console.log("createFullOrder: New Order ID:", newOrderId);
+
   if (rpcError) {
     console.error("createFullOrder: RPC Error:", rpcError);
     return { success: false, error: { message: rpcError.message } };
   }
 
   revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard/inbox");
   return { success: true, newOrderId };
 }
 
 // ACTION TO CANCEL AN ORDER AND ADD A NOTE
 export async function cancelOrderWithNote(orderId, cancellationNote) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) return { error: "Action non autorisée." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   // First, call the existing RPC to update status and restock inventory
   const { error: rpcError } = await supabase.rpc(

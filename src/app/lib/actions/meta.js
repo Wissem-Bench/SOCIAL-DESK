@@ -1,16 +1,10 @@
 "use server";
 
-import { createClient } from "@/app/lib/supabase/server";
+import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 
 // A helper function to retrieve the user's Meta login
 async function getMetaConnection() {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) throw new Error("Utilisateur non authentifié.");
+  const { supabase, user } = await getSupabaseWithUser();
 
   const { data: connection, error } = await supabase
     .from("social_connections")

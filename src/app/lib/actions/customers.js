@@ -1,17 +1,13 @@
 "use server";
 
-import { createClient } from "@/app/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 
 // ACTION TO RETRIEVE ALL USER CUSTOMERS
-export async function getCustomers() {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) return { error: "Action non autorisée." };
+export async function getCustomers({ supabase, user } = {}) {
+  if (!supabase || !user) {
+    ({ supabase, user } = await getSupabaseWithUser());
+  }
 
   // We retrieve all clients linked to the logged in user ID
   const { data, error } = await supabase
@@ -31,13 +27,7 @@ export async function getCustomers() {
 
 // ACTION TO RETRIEVE A CUSTOMER'S DETAILS AND ORDERS
 export async function getCustomerOrders(customerId) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) return { error: "Action non autorisée." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   // Powerful query that retrieves:
   // 1. Customer information
@@ -76,13 +66,7 @@ export async function getCustomerOrders(customerId) {
 
 // ACTION TO UPDATE ALL USER CUSTOMERS
 export async function updateCustomer(customerId, formData) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) return { error: "Action non autorisée." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   const customerData = {
     full_name: formData.get("full_name"),
@@ -111,15 +95,7 @@ export async function updateCustomer(customerId, formData) {
  * @param {string} customerId - The ID of the customer to archive.
  */
 export async function archiveCustomer(customerId) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { success: false, error: { message: "User not authenticated." } };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   try {
     const { error } = await supabase
@@ -139,12 +115,7 @@ export async function archiveCustomer(customerId) {
 
 // very similar to getCustomerDetails, but tailored for the inbox context.
 export async function getCustomerDetailsForInbox(customerId) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-  if (!user) return { error: "Action non autorisée." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   const { data, error } = await supabase
     .from("customers")
@@ -172,14 +143,9 @@ export async function addProspectAsCustomer(
   platform,
   name
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Action non autorisée." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   // Step 1: Create the new customer record
-  console.log("customer ADDED !!!!");
   const { data: newCustomer, error: custError } = await supabase
     .from("customers")
     .insert({

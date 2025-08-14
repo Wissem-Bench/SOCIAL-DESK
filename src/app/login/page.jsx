@@ -33,6 +33,7 @@ export default function Login() {
       if (error) {
         // Handle incorrect credentials or other auth errors
         setMessage("L'email ou le mot de passe est incorrect.");
+        setLoading(false);
       } else if (data.user) {
         // Handle successful login
         setMessage("Connexion réussie ! Redirection en cours...");
@@ -45,9 +46,9 @@ export default function Login() {
       // Handle unexpected network errors
       console.error("Login Error:", error);
       setMessage("Une erreur réseau est survenue. Veuillez réessayer.");
+      setLoading(false);
     } finally {
       // This will run whether the login succeeds or fails
-      setLoading(false);
     }
   };
 

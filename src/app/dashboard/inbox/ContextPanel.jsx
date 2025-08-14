@@ -12,7 +12,7 @@ function CustomerDetailsView({ customer }) {
     0
   );
   return (
-    <div className="p-6 bg-gray-50 h-full">
+    <div className="p-6 bg-gray-50 flex-1 min-h-0 box-border">
       <h3 className="font-bold text-lg">{customer.full_name}</h3>
       <p className="text-sm text-gray-600">Client via {customer.platform}</p>
 

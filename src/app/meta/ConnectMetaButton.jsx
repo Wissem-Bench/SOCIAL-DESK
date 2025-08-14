@@ -15,7 +15,7 @@ export default function ConnectMetaButton() {
     ].join(",");
 
     // Meta's Authorization URL
-    // state to change in production (a unique string that I generate to prevent CSRF attacks)
+    // state to change in production (a unique string that generated to prevent CSRF attacks)
     const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&response_type=code&state=UNIQUE_STATE_STRING`;
 
     // Redirects the user to the Facebook login page

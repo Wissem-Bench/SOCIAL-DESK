@@ -1,22 +1,14 @@
 "use server";
 
-import { createClient } from "@/app/lib/supabase/server";
+import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 // ACTION TO GET PRODUCTS FROM THE LOGGED IN USER
-export async function getProductsForUser() {
-  const supabase = await createClient();
-
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Vous devez être connecté pour voir vos produits." };
+export async function getProductsForUser({ supabase, user } = {}) {
+  if (!supabase || !user) {
+    ({ supabase, user } = await getSupabaseWithUser());
   }
-
   const { data, error } = await supabase
     .from("products")
     .select(
@@ -43,16 +35,7 @@ export async function getProductsForUser() {
 
 // ACTION TO ADD A PRODUCT
 export async function addProduct(formData) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return redirect("/login");
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   const productData = {
     name: formData.get("name"),
@@ -85,15 +68,7 @@ export async function addProduct(formData) {
 
 // ACTION TO UPDATE A PRODUCT
 export async function updateProduct(productId, formData) {
-  const supabase = await createClient();
-  let auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   const productData = {
     name: formData.get("name"),
@@ -124,15 +99,7 @@ export async function updateProduct(productId, formData) {
 
 // ACTION TO MANUALLY ADJUST STOCK AND LOG THE MOVEMENT
 export async function adjustStockQuantity(formData) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   const data = {
     productId: formData.get("productId"),
@@ -165,15 +132,7 @@ export async function adjustStockQuantity(formData) {
 
 // ACTION TO RECORD A BULK STOCK ARRIVAL
 export async function recordStockArrival(data) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   const reason = data.res;
 
@@ -201,15 +160,7 @@ export async function recordStockArrival(data) {
 
 // ACTION TO ARCHIVE A PRODUCT
 export async function archiveProduct(productId) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   const { error } = await supabase
     .from("products")
@@ -226,18 +177,7 @@ export async function archiveProduct(productId) {
 }
 
 // ACTION TO GET CATEGORIES
-export async function getCategories() {
-  const supabase = await createClient();
-
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Vous devez être connecté pour voir vos categories." };
-  }
-
+export async function getCategories({ supabase, user }) {
   const { data, error } = await supabase
     .from("categories")
     .select("*")
@@ -257,11 +197,7 @@ export async function createCategory(formData) {
   const categoryName = formData.get("name");
   if (!categoryName) return { error: "Category name is required." };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized." };
+  const { supabase, user } = await getSupabaseWithUser();
 
   const { data, error } = await supabase
     .from("categories")
@@ -284,15 +220,7 @@ export async function createCategory(formData) {
 
 // --- Get stock movements for a specific product ---
 export async function getStockMovements(productId) {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
+  const { supabase, user } = await getSupabaseWithUser();
 
   // Security check: Ensure the product belongs to the user before fetching its history
   const { data: productData, error: productError } = await supabase

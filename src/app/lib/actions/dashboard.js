@@ -1,34 +1,25 @@
 "use server";
-
-import { createClient } from "@/app/lib/supabase/server";
+import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 
 export async function checkMetaConnection() {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
+  const { supabase, user } = await getSupabaseWithUser();
 
-  const connectionResult = await supabase
+  if (!user) {
+    return { error: "Vous devez être connecté." };
+  }
+  const { count, error } = await supabase
     .from("social_connections")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  const { count, error: connectionError } = connectionResult;
-
-  if (connectionError) {
-    console.error("Meta Connection Error:", connectionError);
+  if (error) {
+    console.error("Meta Connection Error:", error);
+    return 0;
   }
   return count;
 }
 
-export async function getAdvancedDashboardStats(period = "last_30_days") {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
+export async function getAdvancedDashboardStats({ supabase, user }) {
   const connectionResult = await supabase
     .from("social_connections")
     .select("id", { count: "exact", head: true })
@@ -40,9 +31,7 @@ export async function getAdvancedDashboardStats(period = "last_30_days") {
     console.error("Connection Error:", connectionError);
   }
 
-  const { data, error } = await supabase.rpc("get_advanced_dashboard_stats", {
-    p_period: period,
-  });
+  const { data, error } = await supabase.rpc("get_advanced_dashboard_stats");
 
   if (error) {
     console.error("Advanced Dashboard Stats RPC Error:", error);
@@ -52,17 +41,7 @@ export async function getAdvancedDashboardStats(period = "last_30_days") {
   return { stats: { ...data, count } };
 }
 
-export async function getRecentActivity() {
-  const supabase = await createClient();
-  const auth = supabase.auth;
-  const {
-    data: { user },
-  } = await auth.getUser();
-
-  if (!user) {
-    return { error: "Action non autorisée." };
-  }
-
+export async function getRecentActivity({ supabase, user }) {
   // Fetch the 5 most recent orders with their customer's name
   const { data, error } = await supabase
     .from("orders")
