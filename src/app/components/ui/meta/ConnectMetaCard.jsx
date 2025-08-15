@@ -1,5 +1,5 @@
-import ConnectMetaButton from "@/app/meta/ConnectMetaButton";
-import LogoutButton from "@/app/dashboard/LogoutButton";
+import ConnectMetaButton from "@/app/components/ui/meta/ConnectMetaButton";
+import LogoutButton from "@/app/components/ui/LogoutButton";
 
 export default function ConnectMetaCard() {
   return (

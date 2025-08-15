@@ -5,7 +5,7 @@ import RevenueChart from "./charts/RevenueChart";
 import PlatformChart from "./charts/PlatformChart";
 import TopProductsChart from "./charts/TopProductsChart";
 import ActivityFeed from "./charts/ActivityFeed";
-import ConnectMetaCard from "@/app/meta/ConnectMetaCard";
+import ConnectMetaCard from "@/app/components/ui/meta/ConnectMetaCard";
 import PeriodSelector from "./PeriodSelector";
 
 // Helper for currency formatting

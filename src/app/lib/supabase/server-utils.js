@@ -1,7 +1,7 @@
 import "server-only"; // Ensures this code only runs on the server
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { createClient } from "@/app/lib/supabase/server";
+import { createClient } from "./server";
 
 // This creates a single, cached instance of the Supabase client and user session per request.
 export const getSupabaseWithUser = cache(async (retryCount = 2) => {

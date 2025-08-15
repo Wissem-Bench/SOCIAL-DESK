@@ -1,7 +1,7 @@
 "use client";
 
 import { addProspectAsCustomer } from "@/app/lib/actions/customers";
-import OrderStatusBadge from "../orders/OrderStatusBadge";
+import OrderStatusBadge from "../OrderStatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 

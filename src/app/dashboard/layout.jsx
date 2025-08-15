@@ -1,7 +1,7 @@
 import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 import { UserProvider } from "@/app/hooks/use-user";
 import DashboardLayoutClient from "./DashboardLayoutClient";
-import ConnectMetaCard from "@/app/meta/ConnectMetaCard";
+import ConnectMetaCard from "@/app/components/ui/meta/ConnectMetaCard";
 import { checkMetaConnection } from "@/app/lib/actions/dashboard";
 
 export const dynamic = "force-dynamic";

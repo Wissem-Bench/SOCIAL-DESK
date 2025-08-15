@@ -3,8 +3,8 @@
 import { useUser } from "@/app/hooks/use-user";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import Sidebar from "./Sidebar";
-import TopNavbar from "./TopNavbar";
+import Sidebar from "../components/ui/Sidebar";
+import TopNavbar from "../components/ui/TopNavbar";
 
 export default function DashboardLayoutClient({ children }) {
   const user = useUser(); // Get the user directly from the context!

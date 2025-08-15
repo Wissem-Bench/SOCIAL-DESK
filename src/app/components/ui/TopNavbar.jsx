@@ -1,5 +1,5 @@
 "use client";
-import LogoutButton from "@/app/dashboard/LogoutButton";
+import LogoutButton from "@/app/components/ui/LogoutButton";
 
 export default function TopNavbar({ onMenuToggle }) {
   return (
