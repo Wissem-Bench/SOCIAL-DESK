@@ -133,15 +133,13 @@ export async function createFullOrder(data) {
     payload
   );
 
-  console.log("createFullOrder: New Order ID:", newOrderId);
-
   if (rpcError) {
     console.error("createFullOrder: RPC Error:", rpcError);
     return { success: false, error: { message: rpcError.message } };
   }
 
-  revalidatePath("/dashboard/orders");
   revalidatePath("/dashboard/inbox");
+  revalidatePath("/dashboard/orders");
   return { success: true, newOrderId };
 }
 

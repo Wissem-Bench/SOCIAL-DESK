@@ -1,6 +1,11 @@
 "use client";
 
-export default function InboxToolbar({ filters, onFilterChange }) {
+export default function InboxToolbar({
+  filters,
+  onFilterChange,
+  searchQuery,
+  onSearchChange,
+}) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     onFilterChange({ ...filters, [name]: value });
@@ -11,9 +16,10 @@ export default function InboxToolbar({ filters, onFilterChange }) {
       {/* Search (for later) */}
       <input
         type="text"
-        placeholder="Rechercher..."
+        placeholder="Rechercher par nom..."
         className="flex-1 p-2 border rounded-md min-w-0"
-        disabled
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
       />
 
       <select

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getCustomerDetailsForInbox } from "@/app/lib/actions/customers";
@@ -8,6 +8,8 @@ import { getConversationsFromDB } from "@/app/lib/actions/conversations";
 import DraggableOrderPopup from "./DraggableOrderPopup";
 import ContextPanel from "./ContextPanel";
 import InboxToolbar from "./InboxToolbar";
+import { sendMessage } from "@/app/lib/actions/messages";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 const FacebookIcon = () => (
   <svg
@@ -28,7 +30,7 @@ const InstagramIcon = () => (
   </svg>
 );
 
-export default function InboxClientComponent({ products, error }) {
+export default function InboxClientComponent({ products }) {
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,12 +39,73 @@ export default function InboxClientComponent({ products, error }) {
     status: "all",
     orderStatus: "all",
   });
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // State for the right context panel
   const [customerDetails, setCustomerDetails] = useState(null);
   const [isContextLoading, setIsContextLoading] = useState(false);
+
+  // --- State for the reply input ---
+  const [replyText, setReplyText] = useState("");
+
+  const formRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+
+  // --- Handler for sending a message ---
+  const handleSendMessage = async (formData) => {
+    const messageText = formData.get("messageText");
+    const conversationId = formData.get("conversationId");
+    if (!replyText.trim() || !conversationId) return;
+
+    // --- Optimistic UI Update ---
+    const tempId = `temp_${Date.now()}`;
+    const optimisticMessage = {
+      id: tempId,
+      content: messageText,
+      sent_at: new Date().toISOString(),
+      sender_type: "vendeur",
+    };
+
+    // Find the right conversation and update its messages array
+    const newConversations = conversations.map((convo) => {
+      if (convo.id === conversationId) {
+        return { ...convo, messages: [...convo.messages, optimisticMessage] };
+      }
+      return convo;
+    });
+
+    setConversations(newConversations);
+    setSelectedConversation(
+      newConversations.find((c) => c.id === conversationId)
+    );
+    setReplyText("");
+
+    // --- Call Server Action in the background ---
+    const result = await sendMessage(formData);
+
+    if (result.error) {
+      alert(`Erreur d'envoi: ${result.error}`);
+      // On failure, revert the optimistic update
+      const revertedConversations = conversations.map((convo) => {
+        if (convo.id === conversationId) {
+          return {
+            ...convo,
+            messages: convo.messages.filter((msg) => msg.id !== tempId),
+          };
+        }
+        return convo;
+      });
+      setConversations(revertedConversations);
+      setSelectedConversation(
+        revertedConversations.find((c) => c.id === conversationId)
+      );
+      setReplyText(messageText); // Put text back for retry
+    } else {
+      setReplyText("");
+    }
+  };
 
   // This useEffect fetches data whenever the filters change
   useEffect(() => {
@@ -63,6 +126,20 @@ export default function InboxClientComponent({ products, error }) {
     loadConversations();
   }, [filters]);
 
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery) {
+      return conversations; // Return all conversations if search is empty
+    }
+    const filtered = conversations.filter((convo) => {
+      const name = convo.customers?.full_name || convo.prospect_name || "";
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+    if (!filtered.length) {
+      setSelectedConversation(null);
+    }
+    return filtered;
+  }, [conversations, searchQuery]);
+
   // When a conversation is selected, fetch the customer details for the context panel
   useEffect(() => {
     if (selectedConversation?.customer_id) {
@@ -82,9 +159,37 @@ export default function InboxClientComponent({ products, error }) {
     }
   }, [selectedConversation]);
 
-  if (error) {
-    return <p className="p-8 text-red-500 text-center">{error}</p>;
-  }
+  const sortedMessages = useMemo(() => {
+    if (!selectedConversation?.messages) return [];
+    // Le useMemo est une bonne idée si le tri est coûteux, mais pas obligatoire ici
+    return [...selectedConversation.messages].sort(
+      (a, b) => new Date(a.sent_at) - new Date(b.sent_at)
+    );
+  }, [selectedConversation]);
+
+  // 3. L'effet pour scroller automatiquement vers le bas
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      // On met la position de défilement égale à la hauteur totale du contenu
+      container.scrollTop = container.scrollHeight;
+    }
+    // Cet effet se déclenche chaque fois que la liste des messages change
+  }, [sortedMessages]);
+
+  const handleOrderCreated = async () => {
+    if (!selectedConversation?.customer_id) return;
+
+    // When an order is created, we just refetch the data for the context panel
+    setIsContextLoading(true);
+    const result = await getCustomerDetailsForInbox(
+      selectedConversation.customer_id
+    );
+    if (!result.error) {
+      setCustomerDetails(result.customer);
+    }
+    setIsContextLoading(false);
+  };
 
   return (
     <div className="flex flex-col h-screen" style={{ maxHeight: "84vh" }}>
@@ -93,15 +198,20 @@ export default function InboxClientComponent({ products, error }) {
           Boîte de Réception
         </h1>
       </header>
-      <InboxToolbar filters={filters} onFilterChange={setFilters} />
+      <InboxToolbar
+        filters={filters}
+        onFilterChange={setFilters}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       {/* This container will grow to fill the remaining space and holds our 3 panels */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel: Conversation List */}
         <div className="w-full md:w-1/4 border-r border-gray-200 flex flex-col">
           {/* This inner div will scroll if its content overflows */}
           <div className="overflow-y-auto">
-            {conversations && conversations.length > 0 ? (
-              conversations.map((convo) => (
+            {filteredConversations && filteredConversations.length > 0 ? (
+              filteredConversations.map((convo) => (
                 <div
                   key={convo.id}
                   onClick={() => setSelectedConversation(convo)}
@@ -151,39 +261,58 @@ export default function InboxClientComponent({ products, error }) {
                 </button>
               </div>
 
-              {/* zone des messages (DOIT scroller) */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-100">
-                {selectedConversation.messages
-                  .slice() // clone avant sort si nécessaire
-                  .sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at))
-                  .map((msg) => (
-                    <div key={msg.id} className="flex">
-                      <div
-                        className={`p-3 rounded-lg max-w-lg break-words whitespace-pre-wrap ${
-                          msg.sender_type === "vendeur"
-                            ? "bg-blue-500 text-white ml-auto"
-                            : "bg-white"
-                        }`}
-                      >
-                        {/* break-words + whitespace-pre-wrap évitent overflow horizontal */}
-                        <p className="break-words whitespace-pre-wrap">
-                          {msg.content}
-                        </p>
-                        <p className="text-xs opacity-75 mt-1 text-right">
-                          {format(new Date(msg.sent_at), "p", { locale: fr })}
-                        </p>
-                      </div>
+              {/* messages zone */}
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-100"
+              >
+                {sortedMessages.map((msg) => (
+                  <div key={msg.id} className="flex">
+                    <div
+                      className={`p-3 rounded-lg max-w-lg break-words whitespace-pre-wrap ${
+                        msg.sender_type === "vendeur"
+                          ? "bg-blue-500 text-white ml-auto"
+                          : "bg-white"
+                      }`}
+                    >
+                      <p className="break-words whitespace-pre-wrap">
+                        {msg.content}
+                      </p>
+                      <p className="text-xs opacity-75 mt-1 text-right">
+                        {format(new Date(msg.sent_at), "p", { locale: fr })}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
 
               <div className="p-4 border-t bg-white flex-shrink-0">
-                <input
-                  type="text"
-                  placeholder="Écrire une réponse..."
-                  className="w-full p-2 border rounded-md"
-                  disabled
-                />
+                <form
+                  ref={formRef}
+                  action={handleSendMessage}
+                  className="flex gap-2"
+                >
+                  <input
+                    type="hidden"
+                    name="conversationId"
+                    value={selectedConversation.id}
+                  />
+                  <input
+                    type="text"
+                    name="messageText"
+                    placeholder="Écrire une réponse..."
+                    className="flex-1 p-2 border rounded-md"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    autoComplete="off"
+                  />
+                  <SubmitButton
+                    pendingText="Envoi..."
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+                  >
+                    Envoyer
+                  </SubmitButton>
+                </form>
               </div>
             </>
           ) : (
@@ -208,21 +337,24 @@ export default function InboxClientComponent({ products, error }) {
 
       {/* Draggable Order Popup */}
       {isModalOpen && selectedConversation && (
-        <DraggableOrderPopup
-          onClose={() => setIsModalOpen(false)}
-          customer={{
-            // The customer ID for the order is our internal DB id if they are a customer,
-            // otherwise we can use the platform id to find/create them.
-            // Let's assume createFullOrder can handle a platform_customer_id.
-            id:
-              selectedConversation.customer_id ||
-              selectedConversation.platform_conversation_id,
-            name:
-              selectedConversation.customers?.full_name ||
-              selectedConversation.prospect_name,
-          }}
-          products={products}
-        />
+        <>
+          {/* The new overlay div */}
+          <div className="fixed inset-0 bg-black bg-opacity-40 z-40" />
+
+          <DraggableOrderPopup
+            onClose={() => setIsModalOpen(false)}
+            onOrderCreated={handleOrderCreated}
+            customer={{
+              id:
+                selectedConversation.customer_id ||
+                selectedConversation.platform_conversation_id,
+              name:
+                selectedConversation.customers?.full_name ||
+                selectedConversation.prospect_name,
+            }}
+            products={products}
+          />
+        </>
       )}
     </div>
   );

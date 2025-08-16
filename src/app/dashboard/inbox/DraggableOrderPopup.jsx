@@ -6,7 +6,12 @@ import { XCircleIcon } from "@heroicons/react/20/solid";
 import { createFullOrder } from "@/app/lib/actions/orders";
 import SubmitButton from "@/app/components/ui/SubmitButton";
 
-export default function DraggableOrderPopup({ customer, products, onClose }) {
+export default function DraggableOrderPopup({
+  customer,
+  products,
+  onClose,
+  onOrderCreated,
+}) {
   const popupRef = useRef(null);
 
   // Initial line items: always start with one empty row
@@ -112,8 +117,17 @@ export default function DraggableOrderPopup({ customer, products, onClose }) {
         })),
     };
 
-    await createFullOrder(dataToSubmit);
-    onClose();
+    const result = await createFullOrder(dataToSubmit);
+
+    if (result.error) {
+      alert(result.error.message);
+    } else {
+      // On success, call the callback function to notify the parent
+      if (onOrderCreated) {
+        onOrderCreated();
+      }
+      onClose();
+    }
   };
 
   return (
