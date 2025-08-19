@@ -16,7 +16,7 @@ export async function getConversationsFromDB(filters = {}) {
 
   if (error) {
     console.error("RPC get_filtered_conversations Error:", error);
-    return { error: "Impossible de charger les conversations." };
+    throw new Error("Impossible de charger les conversations.");
   }
   // The RPC function returns an array of JSON objects, which matches the expected structure.
   return { conversations: data };

@@ -54,7 +54,7 @@ export async function addProduct(formData) {
     !productData.selling_price ||
     productData.stock_quantity === null
   ) {
-    return { error: "Veuillez remplir les champs obligatoires." };
+    throw new Error("Veuillez remplir les champs obligatoires.");
   }
 
   const { error } = await supabase
@@ -65,7 +65,7 @@ export async function addProduct(formData) {
 
   if (error) {
     console.error("Erreur d'ajout:", error.message);
-    return { error: "Une erreur est survenue lors de l'ajout du produit." };
+    throw new Error("Une erreur est survenue lors de l'ajout du produit.");
   }
 
   // refresh the product page to show the new addition
@@ -85,7 +85,7 @@ export async function updateProduct({ id, formData }) {
   };
 
   if (!productData.name || !productData.selling_price) {
-    return { error: "Le nom et le prix de vente sont obligatoires." };
+    throw new Error("Le nom et le prix de vente sont obligatoires.");
   }
 
   const { error } = await supabase
@@ -115,7 +115,7 @@ export async function adjustStockQuantity(formData) {
   };
 
   if (isNaN(data.newQuantity) || data.newQuantity < 0) {
-    return { error: "La quantité doit être un nombre positif." };
+    throw new Error("La quantité doit être un nombre positif.");
   }
   if (!data.reason) {
     data.reason = "Correction inventaire";
@@ -130,7 +130,7 @@ export async function adjustStockQuantity(formData) {
 
   if (error) {
     console.error("Stock Adjustment RPC Error:", error);
-    return { error: "Impossible d'ajuster le stock." };
+    throw new Error("Impossible d'ajuster le stock.");
   }
 
   revalidatePath("/dashboard/products");
@@ -140,7 +140,7 @@ export async function adjustStockQuantity(formData) {
 // --- ACTION TO RESTORE AN ARCHIVED PRODUCT ---
 export async function restoreProduct(productId) {
   const { supabase, user } = await getSupabaseWithUser();
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const { error } = await supabase
     .from("products")
@@ -163,7 +163,7 @@ export async function recordStockArrival(data) {
   const reason = data.reason;
 
   if (!reason || !data.items || data.items.length === 0) {
-    return { error: "La raison et au moins un produit sont requis." };
+    throw new Error("La raison et au moins un produit sont requis.");
   }
 
   // The payload for our RPC function
@@ -215,7 +215,7 @@ export async function getStockMovements(productId) {
     .single();
 
   if (productError || !productData) {
-    return { error: "Produit introuvable ou accès non autorisé." };
+    throw new Error("Produit introuvable ou accès non autorisé.");
   }
 
   // Fetch all movements for this product, newest first

@@ -4,7 +4,7 @@ import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 export async function checkMetaConnection() {
   const { supabase, user } = await getSupabaseWithUser();
 
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const { count, error } = await supabase
     .from("social_connections")
@@ -34,7 +34,7 @@ export async function getAdvancedDashboardStats({ supabase, user }) {
 
   if (error) {
     console.error("Advanced Dashboard Stats RPC Error:", error);
-    return { error: "Failed to load advanced dashboard statistics." };
+    throw new Error("Failed to load advanced dashboard statistics.");
   }
 
   return { stats: { ...data, count } };
@@ -59,7 +59,7 @@ export async function getRecentActivity({ supabase, user }) {
 
   if (error) {
     console.error("Recent Activity Error:", error);
-    return { error: "Impossible de charger l'activité récente." };
+    throw new Error("Impossible de charger l'activité récente.");
   }
 
   // We can format the data here to be ready for the UI

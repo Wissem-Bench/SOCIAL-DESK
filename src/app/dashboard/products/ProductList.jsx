@@ -389,7 +389,7 @@ export default function ProductList() {
                                 className="flex items-center gap-2 text-green-600 hover:text-green-900 font-medium disabled:text-gray-400"
                               >
                                 {isThisProductRestoring
-                                  ? "Restauration..."
+                                  ? "en cours..."
                                   : "Restaurer"}
                               </button>
                             </>

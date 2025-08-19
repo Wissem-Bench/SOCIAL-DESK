@@ -5,13 +5,13 @@ import { revalidatePath } from "next/cache";
 
 export async function sendMessage(formData) {
   const { supabase, user } = await getSupabaseWithUser();
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const messageText = formData.get("messageText");
   const conversationId = formData.get("conversationId");
 
   if (!messageText || !conversationId) {
-    return { error: "Données manquantes pour envoyer le message." };
+    throw new Error("Données manquantes pour envoyer le message.");
   }
 
   // Step 1: Fetch the conversation to get the user_id and customer's platform ID.
@@ -26,7 +26,7 @@ export async function sendMessage(formData) {
       "SendMessage Error: Could not find conversation.",
       convoError
     );
-    return { error: "Conversation introuvable." };
+    throw new Error("Conversation introuvable.");
   }
 
   // Step 2: Use the user_id from the conversation to get the social connection details.
@@ -41,7 +41,7 @@ export async function sendMessage(formData) {
       "SendMessage Error: Could not find valid social connection.",
       connError
     );
-    return { error: "Connexion Meta invalide ou jeton de page manquant." };
+    throw new Error("Connexion Meta invalide ou jeton de page manquant.");
   }
 
   const pageAccessToken = connectionData.page_access_token;

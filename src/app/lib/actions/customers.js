@@ -24,10 +24,10 @@ export async function getCustomers({
 
   if (error) {
     console.error("Erreur BDD (getCustomers):", error.message);
-    return { error: "Impossible de récupérer les clients." };
+    throw new Error("Impossible de récupérer les clients.");
   }
 
-  return { customers: data };
+  return data;
 }
 
 // ACTION TO RETRIEVE A CUSTOMER'S DETAILS AND ORDERS
@@ -63,14 +63,14 @@ export async function getCustomerOrders(customerId) {
 
   if (error) {
     console.error("Erreur BDD (getCustomerOrders):", error.message);
-    return { error: "Impossible de récupérer les détails du client." };
+    throw new Error("Impossible de récupérer les détails du client.");
   }
 
   return { customer: data };
 }
 
 // ACTION TO UPDATE ALL USER CUSTOMERS
-export async function updateCustomer(customerId, formData) {
+export async function updateCustomer({ id, formData }) {
   const { supabase, user } = await getSupabaseWithUser();
 
   const customerData = {
@@ -83,7 +83,7 @@ export async function updateCustomer(customerId, formData) {
     const { error } = await supabase
       .from("customers")
       .update(customerData)
-      .eq("id", customerId);
+      .eq("id", id);
 
     if (error) throw error;
 
@@ -91,7 +91,7 @@ export async function updateCustomer(customerId, formData) {
     return { success: true };
   } catch (error) {
     console.error("Error updating customer:", error);
-    return { error: "Failed to update customer." };
+    throw new Error("Failed to update customer.");
   }
 }
 
@@ -114,7 +114,7 @@ export async function archiveCustomer(customerId) {
     return { success: true };
   } catch (error) {
     console.error("Error archiving customer:", error);
-    return { error: "Failed to archive customer." };
+    throw new Error("Failed to archive customer.");
   }
 }
 
@@ -136,7 +136,7 @@ export async function getCustomerDetailsForInbox(customerId) {
 
   if (error) {
     console.error("getCustomerDetailsForInbox Error:", error);
-    return { error: "Impossible de récupérer les détails du client." };
+    throw new Error("Impossible de récupérer les détails du client.");
   }
 
   return { customer: data };
@@ -145,11 +145,11 @@ export async function getCustomerDetailsForInbox(customerId) {
 // ACTION TO MANUALLY CREATE A NEW CUSTOMER
 export async function createManualCustomer(formData) {
   const { supabase, user } = await getSupabaseWithUser();
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const fullName = formData.get("full_name")?.toString().trim();
   if (!fullName) {
-    return { error: "Le nom complet est requis." };
+    throw new Error("Le nom complet est requis.");
   }
 
   const customerData = {
@@ -166,7 +166,7 @@ export async function createManualCustomer(formData) {
 
   if (error) {
     console.error("Create Manual Customer Error:", error);
-    return { error: "Impossible de créer le client." };
+    throw new Error("Impossible de créer le client.");
   }
 
   revalidatePath("/dashboard/customers");
@@ -196,9 +196,9 @@ export async function addProspectAsCustomer(
   if (custError) {
     // Handle case where customer might have been created in another tab
     if (custError.code === "23505") {
-      return { error: "Ce client existe déjà." };
+      throw new Error("Ce client existe déjà.");
     }
-    return { error: "Impossible de créer le client." };
+    throw new Error("Impossible de créer le client.");
   }
 
   // Step 2: Update the conversation to link it to the new customer
@@ -209,7 +209,7 @@ export async function addProspectAsCustomer(
     .eq("id", conversationId);
 
   if (convoError) {
-    return { error: "Impossible de lier le client à la conversation." };
+    throw new Error("Impossible de lier le client à la conversation.");
   }
 
   revalidatePath("/dashboard/inbox");
@@ -219,7 +219,7 @@ export async function addProspectAsCustomer(
 // --- Restore an archived customer ---
 export async function restoreCustomer(customerId) {
   const { supabase, user } = await getSupabaseWithUser();
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const { error } = await supabase
     .from("customers")
@@ -228,7 +228,7 @@ export async function restoreCustomer(customerId) {
 
   if (error) {
     console.error("Restore Customer Error:", error);
-    return { error: "Impossible de restaurer le client." };
+    throw new Error("Impossible de restaurer le client.");
   }
 
   revalidatePath("/dashboard/customers");

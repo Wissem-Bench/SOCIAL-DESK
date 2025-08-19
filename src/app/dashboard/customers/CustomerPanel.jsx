@@ -1,24 +1,48 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import {
   updateCustomer,
   createManualCustomer,
 } from "@/app/lib/actions/customers"; // We will create this action
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function CustomerPanel({ customerToEdit, onClose }) {
+  const queryClient = useQueryClient();
   const isEditMode = !!customerToEdit;
-  // // Bind the customer ID to the server action
-  // const updateCustomerWithId = updateCustomer.bind(null, customerToEdit.id);
 
-  const handleFormAction = async (formData) => {
-    if (isEditMode) {
-      await updateCustomer(customerToEdit.id, formData);
-    } else {
-      await createManualCustomer(formData);
+  const { mutate: createCustomerMutation, isPending: isCreating } = useMutation(
+    {
+      mutationFn: createManualCustomer,
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        onClose();
+      },
+      onError: (err) => alert(err.message),
     }
-    onClose();
+  );
+
+  const { mutate: updateCustomerMutation, isPending: isUpdating } = useMutation(
+    {
+      mutationFn: updateCustomer,
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        onClose();
+      },
+      onError: (err) => alert(err.message),
+    }
+  );
+
+  const handleFormAction = (formData) => {
+    if (isEditMode) {
+      updateCustomerMutation({ id: customerToEdit.id, formData: formData });
+    } else {
+      createCustomerMutation(formData);
+    }
   };
+
+  const isPending = isCreating || isUpdating;
 
   return (
     <div
@@ -121,16 +145,18 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
             <button
               type="button"
               onClick={onClose}
+              disabled={isPending}
               className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
             >
               Annuler
             </button>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Sauvegarde..."
+              isPending={isPending}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
             >
               {isEditMode ? "Enregistrer" : "Créer le client"}
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>

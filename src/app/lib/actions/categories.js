@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 export async function getCategories() {
   const { supabase, user } = await getSupabaseWithUser();
 
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const { data, error } = await supabase
     .from("categories")
@@ -25,7 +25,7 @@ export async function getCategories() {
 // --- ACTION TO CREATE NEW CATEGORY ---
 export async function createCategory(formData) {
   const categoryName = formData.get("name");
-  if (!categoryName) return { error: "Category name is required." };
+  if (!categoryName) throw new Error("Category name is required.");
 
   const { supabase, user } = await getSupabaseWithUser();
 
@@ -51,12 +51,12 @@ export async function createCategory(formData) {
 // --- ACTION TO UPDATE CATEGORY ---
 export async function updateCategory(formData) {
   const { supabase, user } = await getSupabaseWithUser();
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const categoryId = formData.get("id");
   const newName = formData.get("name")?.toString().trim();
 
-  if (!newName || !categoryId) return { error: "Données invalides." };
+  if (!newName || !categoryId) throw new Error("Données invalides.");
 
   const { data, error } = await supabase
     .from("categories")
@@ -76,10 +76,10 @@ export async function updateCategory(formData) {
 // --- ACTION TO DELETE A CATEGORY ---
 export async function deleteCategory(formData) {
   const { supabase, user } = await getSupabaseWithUser();
-  if (!user) return { error: "Action non autorisée." };
+  if (!user) throw new Error("Action non autorisée.");
 
   const categoryId = formData.get("id");
-  if (!categoryId) return { error: "ID de catégorie manquant." };
+  if (!categoryId) throw new Error("ID de catégorie manquant.");
 
   const { error } = await supabase
     .from("categories")

@@ -13,7 +13,7 @@ export async function getOrdersForUser({ supabase, user }) {
 
   if (error) {
     console.error("Erreur BDD:", error.message);
-    return { error: "Impossible de récupérer les commandes." };
+    throw new Error("Impossible de récupérer les commandes.");
   }
   return { orders: data };
 }
@@ -23,7 +23,7 @@ export async function createOrderFromConversation(customerDetails, orderItems) {
   const { supabase, user } = await getSupabaseWithUser();
 
   if (!customerDetails || !orderItems || orderItems.length === 0) {
-    return { error: "Données de commande invalides." };
+    throw new Error("Données de commande invalides.");
   }
 
   const { error, data: newOrderId } = await supabase.rpc(
@@ -39,7 +39,7 @@ export async function createOrderFromConversation(customerDetails, orderItems) {
 
   if (error) {
     console.error("Erreur RPC create_order:", error);
-    return { error: "Impossible de créer la commande." };
+    throw new Error("Impossible de créer la commande.");
   }
 
   revalidatePath("/dashboard/orders");
@@ -60,7 +60,7 @@ export async function updateOrderStatus(orderId, newStatus) {
 
   if (error) {
     console.error("Erreur RPC:", error.message);
-    return { error: "Impossible de mettre à jour le statut." };
+    throw new Error("Impossible de mettre à jour le statut.");
   }
 
   revalidatePath("/dashboard/orders");
@@ -158,7 +158,7 @@ export async function cancelOrderWithNote(orderId, cancellationNote) {
 
   if (rpcError) {
     console.error("RPC Error on cancel:", rpcError);
-    return { error: "Impossible de changer le statut." };
+    throw new Error("Impossible de changer le statut.");
   }
 
   // If status update is successful, append the cancellation note
@@ -172,7 +172,7 @@ export async function cancelOrderWithNote(orderId, cancellationNote) {
 
     if (fetchError) {
       console.error("Fetch note error:", fetchError);
-      return { error: "Impossible de récupérer la note existante." };
+      throw new Error("Impossible de récupérer la note existante.");
     }
 
     // Create the new note by appending
@@ -187,7 +187,7 @@ export async function cancelOrderWithNote(orderId, cancellationNote) {
 
     if (updateError) {
       console.error("Note update error:", updateError);
-      return { error: "Impossible de sauvegarder la note d'annulation." };
+      throw new Error("Impossible de sauvegarder la note d'annulation.");
     }
   }
 
