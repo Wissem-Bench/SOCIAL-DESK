@@ -2,10 +2,13 @@
 
 import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 // ACTION TO GET PRODUCTS FROM THE LOGGED IN USER
-export async function getProductsForUser({ supabase, user } = {}) {
+export async function getProductsForUser({
+  supabase,
+  user,
+  isArchived = false,
+} = {}) {
   if (!supabase || !user) {
     ({ supabase, user } = await getSupabaseWithUser());
   }
@@ -22,15 +25,15 @@ export async function getProductsForUser({ supabase, user } = {}) {
   `
     )
     .eq("user_id", user.id)
-    .eq("is_archived", false)
+    .eq("is_archived", isArchived)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erreur de BDD:", error.message);
-    return { error: "Impossible de récupérer les produits." };
+    console.error("Get Products Error:", error);
+    throw new Error("Impossible de charger les produits.");
   }
 
-  return { products: data };
+  return data;
 }
 
 // ACTION TO ADD A PRODUCT
@@ -54,7 +57,11 @@ export async function addProduct(formData) {
     return { error: "Veuillez remplir les champs obligatoires." };
   }
 
-  const { error } = await supabase.from("products").insert(productData);
+  const { error } = await supabase
+    .from("products")
+    .insert(productData)
+    .select("*, categories ( id, name )")
+    .single();
 
   if (error) {
     console.error("Erreur d'ajout:", error.message);
@@ -67,7 +74,7 @@ export async function addProduct(formData) {
 }
 
 // ACTION TO UPDATE A PRODUCT
-export async function updateProduct(productId, formData) {
+export async function updateProduct({ id, formData }) {
   const { supabase, user } = await getSupabaseWithUser();
 
   const productData = {
@@ -84,7 +91,7 @@ export async function updateProduct(productId, formData) {
   const { error } = await supabase
     .from("products")
     .update(productData)
-    .match({ id: productId, user_id: user.id });
+    .match({ id: id, user_id: user.id });
 
   if (error) {
     console.error("Update Product Error:", error.message);
@@ -130,11 +137,30 @@ export async function adjustStockQuantity(formData) {
   return { success: "Stock ajusté avec succès." };
 }
 
+// --- ACTION TO RESTORE AN ARCHIVED PRODUCT ---
+export async function restoreProduct(productId) {
+  const { supabase, user } = await getSupabaseWithUser();
+  if (!user) return { error: "Action non autorisée." };
+
+  const { error } = await supabase
+    .from("products")
+    .update({ is_archived: false })
+    .match({ id: productId, user_id: user.id });
+
+  if (error) {
+    console.error("Restore Product Error:", error);
+    throw new Error("Impossible de restaurer le produit.");
+  }
+
+  revalidatePath("/dashboard/products");
+  return { success: "Produit restauré." };
+}
+
 // ACTION TO RECORD A BULK STOCK ARRIVAL
 export async function recordStockArrival(data) {
   const { supabase, user } = await getSupabaseWithUser();
 
-  const reason = data.res;
+  const reason = data.reason;
 
   if (!reason || !data.items || data.items.length === 0) {
     return { error: "La raison et au moins un produit sont requis." };
@@ -151,7 +177,7 @@ export async function recordStockArrival(data) {
 
   if (error) {
     console.error("Stock Arrival RPC Error:", error);
-    return { error: "Impossible d'enregistrer l'arrivage." };
+    throw new Error("Impossible d'enregistrer l'arrivage.");
   }
 
   revalidatePath("/dashboard/products");
@@ -169,53 +195,11 @@ export async function archiveProduct(productId) {
 
   if (error) {
     console.error("Archive Product Error:", error);
-    return { error: "Impossible d'archiver le produit." };
+    throw new Error("Impossible d'archiver le produit.");
   }
 
   revalidatePath("/dashboard/products");
   return { success: "Produit archivé avec succès." };
-}
-
-// ACTION TO GET CATEGORIES
-export async function getCategories({ supabase, user }) {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Failed to fetch enum values:", error.message);
-    return { error: "Failed to fetch enum values" };
-  }
-
-  return { categories: data, error };
-}
-
-// --- ACTION TO CREATE NEW CATEGORY ---
-export async function createCategory(formData) {
-  const categoryName = formData.get("name");
-  if (!categoryName) return { error: "Category name is required." };
-
-  const { supabase, user } = await getSupabaseWithUser();
-
-  const { data, error } = await supabase
-    .from("categories")
-    .insert({ name: categoryName.trim(), user_id: user.id })
-    .select()
-    .single();
-
-  if (error) {
-    // Handles duplicate category names gracefully
-    if (error.code === "23505") {
-      return { error: `La categorie "${categoryName}" existe déjà.` };
-    }
-    console.error("Create Category Error:", error);
-    return { error: "Failed to create category." };
-  }
-
-  revalidatePath("/dashboard/products");
-  return { category: data };
 }
 
 // --- Get stock movements for a specific product ---
@@ -243,7 +227,7 @@ export async function getStockMovements(productId) {
 
   if (error) {
     console.error("Get Stock Movements Error:", error);
-    return { error: "Impossible de charger l'historique du stock." };
+    throw new Error("Impossible de charger l'historique du stock.");
   }
 
   return { movements: data };

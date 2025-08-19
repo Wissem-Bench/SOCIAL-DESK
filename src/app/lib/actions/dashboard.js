@@ -4,9 +4,8 @@ import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 export async function checkMetaConnection() {
   const { supabase, user } = await getSupabaseWithUser();
 
-  if (!user) {
-    return { error: "Vous devez être connecté." };
-  }
+  if (!user) return { error: "Action non autorisée." };
+
   const { count, error } = await supabase
     .from("social_connections")
     .select("id", { count: "exact", head: true })

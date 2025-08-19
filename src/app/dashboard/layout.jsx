@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
+import QueryProvider from "@/app/components/providers/QueryProvider";
 import { UserProvider } from "@/app/hooks/use-user";
 import DashboardLayoutClient from "./DashboardLayoutClient";
 import ConnectMetaCard from "@/app/components/ui/meta/ConnectMetaCard";
@@ -11,8 +13,7 @@ export default async function DashboardLayout({ children }) {
   const { user } = await getSupabaseWithUser();
 
   if (!user) {
-    // If no user, we can handle the redirect logic here or in middleware.
-    // For now, let's assume middleware handles it.
+    redirect("/login");
   }
 
   const hasMetaConnection = await checkMetaConnection();
@@ -21,9 +22,10 @@ export default async function DashboardLayout({ children }) {
   }
 
   return (
-    // We wrap the entire client-side layout with our UserProvider
-    <UserProvider user={user}>
-      <DashboardLayoutClient>{children}</DashboardLayoutClient>
-    </UserProvider>
+    <QueryProvider>
+      <UserProvider user={user}>
+        <DashboardLayoutClient>{children}</DashboardLayoutClient>
+      </UserProvider>
+    </QueryProvider>
   );
 }

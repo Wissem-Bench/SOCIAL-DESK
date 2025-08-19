@@ -14,7 +14,7 @@ export default function OrderDetailsRow({ order }) {
             {items.map((item, index) => (
               <li
                 key={index}
-                className="flex justify-between items-center text-sm"
+                className="flex justify-between items-center text-sm hover:bg-gray-100"
               >
                 <span className="text-gray-600">
                   {item.quantity} x {item.products?.name || "Produit inconnu"}

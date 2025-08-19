@@ -184,7 +184,7 @@ export default function OrderList({ initialOrders, customers, products }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {order.customers?.full_name || "Client inconnu"}
+                    {order.customer_name || "Client inconnu"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {format(new Date(order.order_date), "dd MMM yyyy", {

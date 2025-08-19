@@ -1,13 +1,37 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { recordStockArrival } from "@/app/lib/actions/products";
 import { XCircleIcon } from "@heroicons/react/20/solid";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function StockArrivalModal({ products, onClose }) {
+  const queryClient = useQueryClient();
   const [lineItems, setLineItems] = useState([{ product_id: "", quantity: 1 }]);
-  const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+
+  // --- Setup the mutation with React Query ---
+  const { mutate: recordArrivalMutation, isPending } = useMutation({
+    mutationFn: recordStockArrival,
+    onSuccess: (data, variables) => {
+      // --- On success, invalidate queries to trigger automatic refetching ---
+      // Invalidate the main product list
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      // Invalidate the history for each affected product so it's fresh if the user expands it
+      variables.items.forEach((item) => {
+        queryClient.invalidateQueries({
+          queryKey: ["stockMovements", item.product_id],
+        });
+      });
+
+      onClose(); // Close the modal
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   const handleLineItemChange = (index, field, value) => {
     const updatedItems = [...lineItems];
@@ -23,8 +47,11 @@ export default function StockArrivalModal({ products, onClose }) {
     setLineItems(lineItems.filter((_, i) => i !== index));
   };
 
-  const handleFormSubmit = async () => {
+  const handleFormSubmit = (formData) => {
     setError("");
+    const res = formData.get("reason")?.toString().trim();
+    let reasonText = res ? "Arrivage - " + res : "Arrivage";
+
     const validItems = lineItems
       .filter((item) => item.product_id && item.quantity > 0)
       .map((item) => ({
@@ -38,16 +65,8 @@ export default function StockArrivalModal({ products, onClose }) {
       );
       return;
     }
-
-    let res = reason ? "Arrivage - " + reason : "Arrivage";
-
-    const result = await recordStockArrival({ res, items: validItems });
-
-    if (result.error) {
-      setError(result.error);
-    } else {
-      onClose();
-    }
+    // Call the mutation
+    recordArrivalMutation({ reason: reasonText, items: validItems });
   };
 
   // Prevent already selected products from appearing in other dropdowns
@@ -72,8 +91,7 @@ export default function StockArrivalModal({ products, onClose }) {
             </label>
             <input
               type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              name="reason"
               placeholder="Ex: Livraison Fournisseur A - 02/08/2025"
               className="mt-1 block w-full p-2 border rounded-md"
             />
@@ -142,16 +160,18 @@ export default function StockArrivalModal({ products, onClose }) {
             <button
               type="button"
               onClick={onClose}
+              disabled={isPending}
               className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
             >
               Annuler
             </button>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Enregistrement..."
+              isPending={isPending}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               Enregistrer l'arrivage
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>

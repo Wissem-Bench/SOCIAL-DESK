@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, useRef, Fragment } from "react";
 import { Combobox, Transition } from "@headlessui/react";
 import {
   CheckIcon,
@@ -6,6 +6,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/20/solid";
 import { updateFullOrder, createFullOrder } from "@/app/lib/actions/orders";
+import { se } from "date-fns/locale";
 
 export default function OrderPanel({ order, customers, products, onClose }) {
   // Determine the mode based on the presence of the 'order' prop (Add/Edit)
@@ -16,6 +17,8 @@ export default function OrderPanel({ order, customers, products, onClose }) {
     customers.find((c) => c.id === order?.customer_id) || null
   );
   const [customerQuery, setCustomerQuery] = useState("");
+
+  const comboboxInputRef = useRef(null);
 
   const initialLineItems = useMemo(() => {
     // If not in edit mode, start with one empty line item
@@ -229,9 +232,32 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                   </Combobox.Label>
                   <div className="relative mt-1">
                     <Combobox.Input
+                      ref={comboboxInputRef}
                       className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm sm:text-sm"
                       onChange={(event) => setCustomerQuery(event.target.value)}
                       displayValue={(customer) => customer?.full_name || ""}
+                      onBlur={() => {
+                        // We use a short timeout to prevent a "race condition".
+                        // This gives the Combobox time to process a click on an option
+                        // before the blur event resets the query.
+                        setTimeout(() => {
+                          setCustomerQuery("");
+                        }, 150); // 150ms is a safe delay
+                      }}
+                      onFocus={() => {
+                        // When the input is focused, dispatch a keyboard event
+                        if (comboboxInputRef.current) {
+                          const downArrowEvent = new KeyboardEvent("keydown", {
+                            key: "ArrowDown",
+                            code: "ArrowDown",
+                            bubbles: true,
+                            cancelable: true,
+                          });
+                          comboboxInputRef.current.dispatchEvent(
+                            downArrowEvent
+                          );
+                        }
+                      }}
                     />
                     <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
                       <ChevronUpDownIcon

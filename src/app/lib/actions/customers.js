@@ -2,9 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
+import { randomUUID } from "crypto"; // Node.js built-in crypto module
 
 // ACTION TO RETRIEVE ALL USER CUSTOMERS
-export async function getCustomers({ supabase, user } = {}) {
+export async function getCustomers({
+  supabase,
+  user,
+  isArchived = false,
+} = {}) {
   if (!supabase || !user) {
     ({ supabase, user } = await getSupabaseWithUser());
   }
@@ -14,7 +19,7 @@ export async function getCustomers({ supabase, user } = {}) {
     .from("customers")
     .select("*")
     .eq("user_id", user.id)
-    .eq("is_archived", false)
+    .eq("is_archived", isArchived)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -137,6 +142,37 @@ export async function getCustomerDetailsForInbox(customerId) {
   return { customer: data };
 }
 
+// ACTION TO MANUALLY CREATE A NEW CUSTOMER
+export async function createManualCustomer(formData) {
+  const { supabase, user } = await getSupabaseWithUser();
+  if (!user) return { error: "Action non autorisée." };
+
+  const fullName = formData.get("full_name")?.toString().trim();
+  if (!fullName) {
+    return { error: "Le nom complet est requis." };
+  }
+
+  const customerData = {
+    user_id: user.id,
+    full_name: fullName,
+    phone_number: formData.get("phone_number")?.toString() || null,
+    address: formData.get("address")?.toString() || null,
+    platform: "manual",
+    // We generate a random UUID for the platform_customer_id to satisfy the NOT NULL and UNIQUE constraints
+    platform_customer_id: randomUUID(),
+  };
+
+  const { error } = await supabase.from("customers").insert(customerData);
+
+  if (error) {
+    console.error("Create Manual Customer Error:", error);
+    return { error: "Impossible de créer le client." };
+  }
+
+  revalidatePath("/dashboard/customers");
+  return { success: "Client ajouté avec succès." };
+}
+
 export async function addProspectAsCustomer(
   conversationId,
   platformCustomerId,
@@ -178,4 +214,23 @@ export async function addProspectAsCustomer(
 
   revalidatePath("/dashboard/inbox");
   return { success: true, customer: newCustomer };
+}
+
+// --- Restore an archived customer ---
+export async function restoreCustomer(customerId) {
+  const { supabase, user } = await getSupabaseWithUser();
+  if (!user) return { error: "Action non autorisée." };
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ is_archived: false }) // Set the flag back to false
+    .match({ id: customerId, user_id: user.id });
+
+  if (error) {
+    console.error("Restore Customer Error:", error);
+    return { error: "Impossible de restaurer le client." };
+  }
+
+  revalidatePath("/dashboard/customers");
+  return { success: "Client restauré avec succès." };
 }

@@ -9,6 +9,7 @@ export default function ConfirmationModal({
   message,
   showNoteInput = false,
   errorMessage = null,
+  isPending = false, // Indicates if the confirmation action is in progress
 }) {
   const [note, setNote] = useState("");
 
@@ -61,6 +62,7 @@ export default function ConfirmationModal({
           <button
             type="button"
             onClick={onClose}
+            disabled={isPending}
             className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm font-medium"
           >
             Non
@@ -68,9 +70,10 @@ export default function ConfirmationModal({
           <button
             type="button"
             onClick={handleConfirm}
+            disabled={isPending}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
           >
-            Oui, confirmer
+            {isPending ? "En cours..." : "Oui, confirmer"}
           </button>
         </div>
       </div>

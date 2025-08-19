@@ -1,44 +1,38 @@
 "use client";
 
-import { useState, useRef, Fragment, useEffect } from "react";
+import { useState, Fragment, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Combobox, Transition } from "@headlessui/react";
 import {
   CheckIcon,
   ChevronUpDownIcon,
   XCircleIcon,
 } from "@heroicons/react/20/solid";
-import {
-  addProduct,
-  updateProduct,
-  createCategory,
-} from "@/app/lib/actions/products";
+import { addProduct, updateProduct } from "@/app/lib/actions/products";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function ProductPanel({
   productToEdit,
   initialCategories = [],
   onClose,
 }) {
+  const queryClient = useQueryClient();
   const isEditMode = !!productToEdit;
 
-  // This useEffect sets the initial category when in edit mode
-  useEffect(() => {
+  // State for the category combobox
+  const [categories, setCategories] = useState(initialCategories);
+  const [selectedCategory, setSelectedCategory] = useState(() => {
     if (isEditMode && productToEdit.category_id) {
       const category = initialCategories.find(
         (c) => c.id === productToEdit.category_id
       );
-      setSelectedCategory(category || null);
+      return category || null;
     }
-  }, [isEditMode, productToEdit, initialCategories]);
-
-  // State for the category combobox
-  const [categories, setCategories] = useState(initialCategories);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+    return null;
+  });
   const [categoryQuery, setCategoryQuery] = useState("");
 
   // State for the "add new category" inline form
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [categoryError, setCategoryError] = useState("");
 
   const filteredCategories =
     categoryQuery === ""
@@ -47,41 +41,47 @@ export default function ProductPanel({
           c.name.toLowerCase().includes(categoryQuery.toLowerCase())
         );
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    const formData = new FormData();
-    formData.append("name", newCategoryName);
+  // --- Define mutations for add and update ---
+  const { mutate: addProductMutation, isPending: isAdding } = useMutation({
+    mutationFn: addProduct,
+    onSuccess: () => {
+      // On success, invalidate the 'products' query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onClose();
+    },
+    onError: (err) => {
+      alert(`Erreur: ${err.message}`);
+    },
+  });
 
-    const result = await createCategory(formData);
-
-    if (result.error) {
-      setCategoryError(result.error);
-    } else if (result.category) {
-      setCategories([...categories, result.category]);
-      setSelectedCategory(result.category);
-      setNewCategoryName("");
-      setIsAddingCategory(false);
-      setCategoryError("");
-    }
-  };
+  const { mutate: updateProductMutation, isPending: isUpdating } = useMutation({
+    mutationFn: updateProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onClose();
+    },
+    onError: (err) => {
+      alert(`Erreur: ${err.message}`);
+    },
+  });
 
   const handleFormSubmit = async (formData) => {
     // Right way to console formData Object
     // console.log(Object.fromEntries(formData.entries()));
+
     // Add selected category_id to the form data before submitting
     if (selectedCategory) {
       formData.append("category_id", selectedCategory.id);
     }
-    const result = isEditMode
-      ? await updateProduct(productToEdit.id, formData)
-      : // The addProduct action is called only in create mode
-        await addProduct(formData);
-    if (result.error) {
-      alert(result.error);
+
+    if (isEditMode) {
+      updateProductMutation({ id: productToEdit.id, formData: formData });
     } else {
-      onClose(); // Close panel on success
+      addProductMutation(formData);
     }
   };
+
+  const isPending = isAdding || isUpdating;
 
   return (
     <div
@@ -134,19 +134,10 @@ export default function ProductPanel({
             <div>
               {/* The Combobox component now wraps everything related to it */}
               <Combobox value={selectedCategory} onChange={setSelectedCategory}>
-                <div className="flex justify-between items-center">
-                  {/* The Label is now correctly inside the Combobox */}
-                  <Combobox.Label className="block text-sm font-medium text-gray-700">
-                    Catégorie
-                  </Combobox.Label>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingCategory(!isAddingCategory)}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    {isAddingCategory ? "Annuler" : "+ Ajouter une catégorie"}
-                  </button>
-                </div>
+                {/* The Label is now correctly inside the Combobox */}
+                <Combobox.Label className="block text-sm font-medium text-gray-700">
+                  Catégorie
+                </Combobox.Label>
 
                 {/* The rest of the Combobox (Input, Button, Options) remains inside */}
                 <div className="relative mt-1">
@@ -218,41 +209,6 @@ export default function ProductPanel({
               </Combobox>
             </div>
 
-            {/* Collapsible Add Category Form */}
-            <Transition
-              show={isAddingCategory}
-              enter="transition-opacity duration-150"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="transition-opacity duration-150"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
-            >
-              <div className="p-3 border rounded-md bg-gray-50">
-                <label className="block text-sm font-medium text-gray-700">
-                  Nom de la nouvelle catégorie
-                </label>
-                <div className="mt-1 flex gap-2">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="flex-grow p-2 border rounded-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateCategory}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                  >
-                    Créer
-                  </button>
-                </div>
-                {categoryError && (
-                  <p className="text-xs text-red-600 mt-1">{categoryError}</p>
-                )}
-              </div>
-            </Transition>
-
             {/* Stock and Prices */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -306,18 +262,18 @@ export default function ProductPanel({
             <button
               type="button"
               onClick={onClose}
+              disabled={isPending}
               className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
             >
               Annuler
             </button>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Sauvegarde..."
+              isPending={isPending}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
             >
-              {isEditMode
-                ? "Enregistrer les modifications"
-                : "Enregistrer le produit"}
-            </button>
+              {isEditMode ? "Enregistrer" : "Créer le produit"}
+            </SubmitButton>
           </div>
         </form>
       </div>

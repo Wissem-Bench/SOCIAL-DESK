@@ -1,11 +1,24 @@
 "use client";
 
 import { XCircleIcon } from "@heroicons/react/20/solid";
-import { updateCustomer } from "@/app/lib/actions/customers"; // We will create this action
+import {
+  updateCustomer,
+  createManualCustomer,
+} from "@/app/lib/actions/customers"; // We will create this action
 
 export default function CustomerPanel({ customerToEdit, onClose }) {
-  // Bind the customer ID to the server action
-  const updateCustomerWithId = updateCustomer.bind(null, customerToEdit.id);
+  const isEditMode = !!customerToEdit;
+  // // Bind the customer ID to the server action
+  // const updateCustomerWithId = updateCustomer.bind(null, customerToEdit.id);
+
+  const handleFormAction = async (formData) => {
+    if (isEditMode) {
+      await updateCustomer(customerToEdit.id, formData);
+    } else {
+      await createManualCustomer(formData);
+    }
+    onClose();
+  };
 
   return (
     <div
@@ -15,10 +28,7 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
       <div className="absolute inset-0" onClick={onClose}></div>
       <div className="fixed inset-y-0 right-0 max-w-md w-full flex">
         <form
-          action={async (formData) => {
-            await updateCustomerWithId(formData);
-            onClose();
-          }}
+          action={handleFormAction}
           className="h-full flex flex-col bg-white shadow-xl w-full"
         >
           {/* --- PANEL HEADER --- */}
@@ -26,10 +36,14 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-medium text-gray-900">
-                  Modifier le Client
+                  {isEditMode
+                    ? "Modifier le Client"
+                    : "Ajouter un Nouveau Client"}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Mettez à jour les informations de {customerToEdit.full_name}.
+                  {isEditMode
+                    ? `Mettez à jour les informations de ${customerToEdit.full_name}.`
+                    : "Créez une nouvelle fiche pour un contact externe."}
                 </p>
               </div>
               <button
@@ -47,62 +61,58 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
             <div className="p-4 sm:p-6 space-y-6">
               {/* Full Name */}
               <div>
-                <label
-                  htmlFor="full_name"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="fullName" className="block text-sm font-medium">
                   Nom complet
                 </label>
                 <input
                   type="text"
                   name="full_name"
-                  id="full_name"
-                  defaultValue={customerToEdit.full_name}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  id="fullName"
+                  defaultValue={customerToEdit?.full_name || ""}
+                  className="mt-1 block w-full p-2 border rounded-md"
                   required
                 />
               </div>
               {/* Phone Number */}
               <div>
                 <label
-                  htmlFor="phone_number"
-                  className="block text-sm font-medium text-gray-700"
+                  htmlFor="phoneNumber"
+                  className="block text-sm font-medium"
                 >
                   Numéro de téléphone
                 </label>
                 <input
                   type="tel"
                   name="phone_number"
-                  id="phone_number"
-                  defaultValue={customerToEdit.phone_number || ""}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  id="phoneNumber"
+                  defaultValue={customerToEdit?.phone_number || ""}
+                  className="mt-1 block w-full p-2 border rounded-md"
                 />
               </div>
               {/* Address */}
               <div>
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="address" className="block text-sm font-medium">
                   Adresse
                 </label>
                 <textarea
                   name="address"
                   id="address"
                   rows="3"
-                  defaultValue={customerToEdit.address || ""}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  defaultValue={customerToEdit?.address || ""}
+                  className="mt-1 block w-full p-2 border rounded-md"
                 ></textarea>
               </div>
               {/* Platform (read-only) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Plateforme d'origine
-                </label>
-                <p className="mt-1 text-sm text-gray-500 capitalize p-2 bg-gray-100 rounded-md">
-                  {customerToEdit.platform}
-                </p>
-              </div>
+              {isEditMode && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Plateforme d'origine
+                  </label>
+                  <p className="mt-1 text-sm text-gray-500 capitalize p-2 bg-gray-100 rounded-md">
+                    {customerToEdit.platform}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -119,7 +129,7 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
             >
-              Enregistrer
+              {isEditMode ? "Enregistrer" : "Créer le client"}
             </button>
           </div>
         </form>

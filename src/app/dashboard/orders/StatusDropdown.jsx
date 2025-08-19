@@ -3,7 +3,7 @@ import {
   updateOrderStatus,
   cancelOrderWithNote,
 } from "@/app/lib/actions/orders";
-import ConfirmationModal from "./ConfirmationModal";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 
 // --- COMPONENT FOR STATUS SELECTOR ---
 export default function StatusDropdown({ order }) {
@@ -146,6 +146,7 @@ export default function StatusDropdown({ order }) {
         onClose={handleCloseModal}
         showNoteInput={confirmation.isCancellation}
         errorMessage={error}
+        isPending={isUpdating}
       />
       <select
         name="status"
