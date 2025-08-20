@@ -207,28 +207,33 @@ export async function getStockMovements(productId) {
   const { supabase, user } = await getSupabaseWithUser();
 
   // Security check: Ensure the product belongs to the user before fetching its history
-  const { data: productData, error: productError } = await supabase
+  const { data: product, error: productError } = await supabase
     .from("products")
-    .select("id")
+    .select("id, stock_quantity")
     .eq("id", productId)
     .eq("user_id", user.id)
     .single();
 
-  if (productError || !productData) {
+  console.log("product", product);
+  console.log("productId", productId);
+  console.log("productError", productError);
+  if (productError || !product) {
     throw new Error("Produit introuvable ou accès non autorisé.");
   }
 
   // Fetch all movements for this product, newest first
-  const { data, error } = await supabase
-    .from("stock_movements")
-    .select("*")
-    .eq("product_id", productId)
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase.rpc(
+    "get_stock_movements_with_history",
+    {
+      p_product_id: productId,
+      p_current_stock: product.stock_quantity,
+    }
+  );
 
   if (error) {
     console.error("Get Stock Movements Error:", error);
     throw new Error("Impossible de charger l'historique du stock.");
   }
 
-  return { movements: data };
+  return data;
 }

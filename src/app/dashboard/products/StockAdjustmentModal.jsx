@@ -1,18 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { adjustStockQuantity } from "@/app/lib/actions/products";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function StockAdjustmentModal({ product, onClose }) {
   const [error, setError] = useState("");
+  const queryClient = useQueryClient();
 
-  const handleFormAction = async (formData) => {
-    const result = await adjustStockQuantity(formData);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      onClose(); // Close modal on success
+  const { mutate: adjustStockMutation, isPending } = useMutation({
+    mutationFn: adjustStockQuantity,
+    onSuccess: () => {
+      // 2. --- On success, invalidate both the main product list and this product's specific history ---
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["stockMovements", product.id],
+      });
+      onClose(); // Close modal
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const handleFormAction = (formData) => {
+    // We add a default reason if the user leaves it blank
+    if (!formData.get("reason")) {
+      formData.set("reason", "Correction inventaire");
     }
+    adjustStockMutation(formData);
   };
 
   return (
@@ -72,12 +89,13 @@ export default function StockAdjustmentModal({ product, onClose }) {
             >
               Annuler
             </button>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Ajustement..."
+              isPending={isPending}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               Confirmer l'ajustement
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>

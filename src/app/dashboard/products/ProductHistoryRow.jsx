@@ -13,7 +13,7 @@ export default function ProductHistoryRow({ product }) {
     error,
   } = useQuery({
     queryKey: ["stockMovements", product.id],
-    queryFn: () => getStockMovements(product.id).then((res) => res.movements),
+    queryFn: () => getStockMovements(product.id),
   });
 
   const renderContent = () => {
@@ -62,9 +62,14 @@ export default function ProductHistoryRow({ product }) {
                   move.change_quantity > 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {move.change_quantity > 0
-                  ? `+${move.change_quantity}`
-                  : move.change_quantity}
+                <span>
+                  {move.change_quantity > 0
+                    ? `+${move.change_quantity}`
+                    : move.change_quantity}
+                </span>
+                <span className="ml-2 text-gray-400 font-light">
+                  ({move.stock_after_movement})
+                </span>
               </td>
               <td className="py-2 px-3 text-gray-700">{move.reason}</td>
             </tr>
