@@ -4,18 +4,42 @@ import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 import { revalidatePath } from "next/cache";
 
 // ACTION TO RETRIEVE ALL USER ORDERS
-export async function getOrdersForUser({ supabase, user }) {
+export async function getOrdersForUser({ supabase, user, filters = {} }) {
   // a query that retrieves orders and associated customer information,
   // for each order, the items and associated product information.
-  const { data, error } = await supabase.rpc("get_orders_with_items", {
-    p_user_id: user.id,
-  });
+  let query = supabase
+    .from("orders")
+    .select(
+      `*, customers ( full_name ), order_items ( quantity, products ( name ) )`
+    )
+    .eq("user_id", user.id);
+
+  // Apply filters
+  if (filters.search) {
+    query = query.ilike("customers.full_name", `%${filters.search}%`); // Search by customer name
+  }
+  if (filters.status && filters.status !== "all") {
+    query = query.eq("status", filters.status);
+  }
+  if (filters.client && filters.client !== "all") {
+    query = query.eq("customer_id", filters.client);
+  }
+
+  // Apply sorting
+  const [sortField, sortOrder] = (filters.sort || "order_number_desc").split(
+    "_"
+  );
+  if (sortField && sortOrder) {
+    query = query.order(sortField, { ascending: sortOrder === "asc" });
+  }
+
+  const { data, error } = await query;
 
   if (error) {
-    console.error("Erreur BDD:", error.message);
+    console.error("Erreur BDD getOrdersForUser:", error);
     throw new Error("Impossible de récupérer les commandes.");
   }
-  return { orders: data };
+  return data;
 }
 
 // CREATE ORDER FROM CONVERSATION
@@ -74,44 +98,33 @@ export async function updateOrderStatus(orderId, newStatus) {
  * @param {object} data - The object containing all the new order data.
  * @returns {Promise<{success: boolean, error: object | null}>}
  */
-export async function updateFullOrder(orderId, data) {
-  try {
-    const { supabase, user } = await getSupabaseWithUser();
+export async function updateFullOrder({ orderId, data }) {
+  const { supabase, user } = await getSupabaseWithUser();
 
-    // Prepare the payload for the RPC (Remote Procedure Call)
-    const payload = {
-      p_order_id: orderId,
-      p_user_id: user.id, // Pass user id for security check inside the PG function
-      p_customer_id: data.customer_id,
-      p_notes: data.notes,
-      p_delivery_service: data.delivery_service,
-      p_tracking_number: data.tracking_number,
-      p_items: data.items, // The array of items is passed as JSON
-    };
+  // Prepare the payload for the RPC (Remote Procedure Call)
+  const payload = {
+    p_order_id: orderId,
+    p_user_id: user.id, // Pass user id for security check inside the PG function
+    p_customer_id: data.customer_id,
+    p_notes: data.notes,
+    p_delivery_service: data.delivery_service,
+    p_tracking_number: data.tracking_number,
+    p_items: data.items, // The array of items is passed as JSON
+  };
 
-    // Call the PostgreSQL function using rpc()
-    const { error: rpcError } = await supabase.rpc(
-      "handle_order_update",
-      payload
-    );
+  // Call the PostgreSQL function using rpc()
+  const { error: rpcError } = await supabase.rpc(
+    "handle_order_update",
+    payload
+  );
 
-    if (rpcError) {
-      // If the database function returns an error, throw it
-      console.error("updateFullOrder: RPC Error:", rpcError);
-      throw rpcError;
-    }
-
-    // Revalidate the path to update the UI with the new data
-    revalidatePath("/dashboard/orders");
-
-    return { success: true, error: null };
-  } catch (error) {
-    console.error("updateFullOrder: A general error occurred.", error);
-    return {
-      success: false,
-      error: { message: error.message || "An unexpected error occurred." },
-    };
+  if (rpcError) {
+    console.error("updateFullOrder: RPC Error:", rpcError);
+    throw new Error("Impossible de mettre à jour la commande.");
   }
+
+  revalidatePath("/dashboard/orders");
+  return { success: true };
 }
 
 export async function createFullOrder(data) {
@@ -140,7 +153,7 @@ export async function createFullOrder(data) {
 
   revalidatePath("/dashboard/inbox");
   revalidatePath("/dashboard/orders");
-  return { success: true, newOrderId };
+  return { newOrderId };
 }
 
 // ACTION TO CANCEL AN ORDER AND ADD A NOTE

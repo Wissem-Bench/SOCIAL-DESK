@@ -1,16 +1,15 @@
 // COMPONENT FOR THE TOOLBAR (FILTERS, SORTING, SEARCH)
-export default function OrderToolbar({
-  searchQuery,
-  onSearchChange,
-  statusFilter,
-  onStatusChange,
-  clientFilter,
-  onClientChange,
-  sortBy,
-  onSortChange,
-  customers,
-  statuses,
-}) {
+export default function OrderToolbar({ filters, onFilterChange, customers }) {
+  const statuses = ["nouveau", "confirmé", "avec_livreur", "livré", "annulé"];
+
+  // A single handler for all filter inputs.
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    // We call the parent handler with an object representing the change,
+    // e.g., { search: 'new value' } or { status: 'confirmé' }
+    onFilterChange({ [name]: value });
+  };
+
   return (
     <div className="p-4 bg-gray-50 rounded-lg mb-6 border">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -25,9 +24,10 @@ export default function OrderToolbar({
           <input
             type="text"
             id="search"
+            name="search" // The 'name' attribute is crucial now
             placeholder="Ex: 1024..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={filters.search} // Value comes from the filters object
+            onChange={handleInputChange} // Uses the single handler
             className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -41,8 +41,9 @@ export default function OrderToolbar({
           </label>
           <select
             id="status-filter"
-            value={statusFilter}
-            onChange={(e) => onStatusChange(e.target.value)}
+            name="status" // The 'name' attribute is crucial now
+            value={filters.status} // Value comes from the filters object
+            onChange={handleInputChange} // Uses the single handler
             className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">Tous les statuts</option>
@@ -63,8 +64,9 @@ export default function OrderToolbar({
           </label>
           <select
             id="client-filter"
-            value={clientFilter}
-            onChange={(e) => onClientChange(e.target.value)}
+            name="client" // The 'name' attribute is crucial now
+            value={filters.client} // Value comes from the filters object
+            onChange={handleInputChange} // Uses the single handler
             className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">Tous les clients</option>
@@ -85,8 +87,9 @@ export default function OrderToolbar({
           </label>
           <select
             id="sort-by"
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value)}
+            name="sort" // The 'name' attribute is crucial now
+            value={filters.sort} // Value comes from the filters object
+            onChange={handleInputChange} // Uses the single handler
             className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="order_number_desc">

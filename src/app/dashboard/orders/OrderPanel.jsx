@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, Fragment } from "react";
+import { useState, useMemo, Fragment } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Combobox, Transition } from "@headlessui/react";
 import {
   CheckIcon,
@@ -6,10 +7,10 @@ import {
   XCircleIcon,
 } from "@heroicons/react/20/solid";
 import { updateFullOrder, createFullOrder } from "@/app/lib/actions/orders";
-import { se } from "date-fns/locale";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function OrderPanel({ order, customers, products, onClose }) {
-  // Determine the mode based on the presence of the 'order' prop (Add/Edit)
+  const queryClient = useQueryClient();
   const isEditMode = !!order;
 
   // --- MANAGEMENT OF LOCAL FORM STATUS ---
@@ -58,6 +59,33 @@ export default function OrderPanel({ order, customers, products, onClose }) {
 
   const [lineItems, setLineItems] = useState(initialLineItems);
 
+  // --- MUTATIONS ---
+  const { mutate: createOrderMutation, isPending: isCreating } = useMutation({
+    mutationFn: createFullOrder,
+    onSuccess: () => {
+      // When an order is created, many things become stale.
+      // We invalidate all related queries to force a complete refresh.
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] }); // Stock has changed
+      queryClient.invalidateQueries({ queryKey: ["customers"] }); // Customer might have new order history
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats"] }); // Stats have changed
+      onClose();
+    },
+    onError: (err) => alert(`Erreur de création: ${err.message}`),
+  });
+
+  const { mutate: updateOrderMutation, isPending: isUpdating } = useMutation({
+    mutationFn: updateFullOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
+      onClose();
+    },
+    onError: (err) => alert(`Erreur de modification: ${err.message}`),
+  });
+
   // FORM SUBMISSION MANAGEMENT
   const handleFormSubmit = async (formData) => {
     const dataToSubmit = {
@@ -75,14 +103,15 @@ export default function OrderPanel({ order, customers, products, onClose }) {
         })),
     };
 
-    // Call the correct action based on the mode
     if (isEditMode) {
-      await updateFullOrder(order.id, dataToSubmit);
+      updateOrderMutation({ orderId: order.id, data: dataToSubmit });
     } else {
-      await createFullOrder(dataToSubmit);
+      createOrderMutation(dataToSubmit);
     }
     onClose();
   };
+
+  const isPending = isCreating || isUpdating;
 
   // --- COMPUTATIONAL LOGIC ---
   const filteredCustomers =
@@ -496,12 +525,14 @@ export default function OrderPanel({ order, customers, products, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
+                disabled={isPending}
                 className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
               >
                 Annuler
               </button>
-              <button
-                type="submit"
+              <SubmitButton
+                isPending={isPending}
+                pendingText={isEditMode ? "Sauvegarde..." : "Création..."}
                 className={`px-4 py-2 rounded-md text-sm ${
                   isSubmitDisabled
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -509,10 +540,8 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                 }`}
                 disabled={isSubmitDisabled}
               >
-                {isEditMode
-                  ? "Enregistrer les modifications"
-                  : "Créer la commande"}
-              </button>
+                {isEditMode ? "Enregistrer" : "Créer la commande"}
+              </SubmitButton>
             </div>
           </div>
         </form>

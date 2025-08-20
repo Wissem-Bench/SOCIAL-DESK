@@ -1,7 +1,27 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { getOrderDetails } from "@/app/lib/actions/orders";
+
 export default function OrderDetailsRow({ order }) {
-  const items = Array.isArray(order.order_items)
-    ? order.order_items
-    : [order.order_items];
+  // We use useQuery to fetch the detailed items for this specific order
+  // This will be automatically refetched when the 'orders' query is invalidated
+  const { data: details, isLoading } = useQuery({
+    queryKey: ["orderDetails", order.id],
+    queryFn: () => getOrderDetails(order.id), // Action to fetch just items for one order
+    initialData: order, // Use initial data to prevent flicker
+  });
+
+  if (isLoading)
+    return (
+      <tr>
+        <td colSpan="8">Chargement des détails...</td>
+      </tr>
+    );
+
+  const items = Array.isArray(details.order_items)
+    ? details.order_items
+    : [details.order_items];
 
   return (
     <tr>

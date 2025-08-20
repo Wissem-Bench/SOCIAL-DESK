@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   updateOrderStatus,
   cancelOrderWithNote,
@@ -7,8 +8,8 @@ import ConfirmationModal from "../../components/ui/ConfirmationModal";
 
 // --- COMPONENT FOR STATUS SELECTOR ---
 export default function StatusDropdown({ order }) {
+  const queryClient = useQueryClient();
   const [localStatus, setLocalStatus] = useState(order.status);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const [confirmation, setConfirmation] = useState({
     isOpen: false,
@@ -24,6 +25,26 @@ export default function StatusDropdown({ order }) {
   useEffect(() => {
     setLocalStatus(order.status);
   }, [order.status]);
+
+  // --- MUTATION FOR STATUS CHANGE ---
+  const { mutate: updateStatusMutation, isPending } = useMutation({
+    // The mutation function will decide which server action to call
+    mutationFn: async ({ newStatus, note }) => {
+      if (newStatus === "annulé") {
+        return cancelOrderWithNote(order.id, note);
+      }
+      return updateOrderStatus(order.id, newStatus);
+    },
+    onSuccess: () => {
+      // On success, invalidate all 'orders' queries to refetch the list
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      handleCloseModal();
+    },
+    onError: (err) => {
+      // We can display the error in the modal
+      setError(err.message);
+    },
+  });
 
   // Define the allowed transitions (our state machine) ---
   const allowedTransitions = {
@@ -52,7 +73,7 @@ export default function StatusDropdown({ order }) {
     return styles[status] || "bg-gray-100 text-gray-800";
   };
 
-  const handleSelectionChange = async (e) => {
+  const handleSelectionChange = (e) => {
     const newStatus = e.target.value;
     if (newStatus === order.status) return;
     setError(null);
@@ -88,32 +109,17 @@ export default function StatusDropdown({ order }) {
   };
 
   // This function is called when the user clicks "Yes" in the modal
-  const handleConfirm = async (note) => {
+  const handleConfirm = (note) => {
     if (!confirmation.newStatus) return;
-
-    setIsUpdating(true);
-    setError(null);
-    let result;
-    if (confirmation.isCancellation) {
-      result = await cancelOrderWithNote(order.id, note);
-    } else {
-      result = await updateOrderStatus(order.id, confirmation.newStatus);
-    }
-
-    if (result.error) {
-      // Set the error message to be displayed in the modal
-      setError(`Erreur: ${result.error}`);
-    } else {
-      // On success, close the modal. Revalidation will do the rest.
-      handleCloseModal();
-    }
-
-    // setConfirmation({ isOpen: false, title: "", message: "", newStatus: null });
-    setIsUpdating(false);
+    updateStatusMutation({ newStatus: confirmation.newStatus, note: note });
   };
 
   const handleCloseModal = () => {
-    setError(null); // Reset error when closing
+    // We reset the visual state of the dropdown in case of cancellation
+    const select = document.getElementById(`status-select-${order.id}`);
+    if (select) select.value = order.status;
+
+    setError(null);
     setConfirmation({
       isOpen: false,
       title: "",
@@ -146,13 +152,14 @@ export default function StatusDropdown({ order }) {
         onClose={handleCloseModal}
         showNoteInput={confirmation.isCancellation}
         errorMessage={error}
-        isPending={isUpdating}
+        isPending={isPending}
       />
       <select
+        id={`status-select-${order.id}`}
         name="status"
         value={localStatus}
         onChange={handleSelectionChange}
-        disabled={isUpdating}
+        disabled={isPending}
         className={`capitalize block w-full py-1 text-sm border-gray-300 rounded-md shadow-sm text-center outline-none transition-colors duration-150 ${getStatusStyles(
           localStatus
         )}`}

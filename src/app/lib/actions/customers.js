@@ -66,7 +66,7 @@ export async function getCustomerOrders(customerId) {
     throw new Error("Impossible de récupérer les détails du client.");
   }
 
-  return { customer: data };
+  return data;
 }
 
 // ACTION TO UPDATE ALL USER CUSTOMERS
@@ -139,7 +139,7 @@ export async function getCustomerDetailsForInbox(customerId) {
     throw new Error("Impossible de récupérer les détails du client.");
   }
 
-  return { customer: data };
+  return data;
 }
 
 // ACTION TO MANUALLY CREATE A NEW CUSTOMER

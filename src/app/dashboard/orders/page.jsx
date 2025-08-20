@@ -1,38 +1,31 @@
-import { getOrdersForUser } from "@/app/lib/actions/orders";
 import { getCustomers } from "@/app/lib/actions/customers";
 import { getProductsForUser } from "@/app/lib/actions/products";
 import OrderList from "./OrderList";
 import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
+
+//export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
   const { supabase, user } = await getSupabaseWithUser();
 
   // We collect orders AND customers in parallel
   const [
-    { orders, error: ordersError },
     { customers, error: customersError },
     { products, error: productsError },
   ] = await Promise.all([
-    getOrdersForUser({ supabase, user }),
     getCustomers({ supabase, user }),
     getProductsForUser({ supabase, user }),
   ]);
 
-  if (ordersError || customersError || productsError) {
-    return (
-      <p className="p-8 text-red-500">
-        {ordersError || customersError || productsError}
-      </p>
-    );
+  const error = customersError || productsError;
+
+  if (error) {
+    return <p className="p-8 text-red-500">{error}</p>;
   }
 
   return (
     <div className="p-4 md:p-8">
-      <OrderList
-        initialOrders={orders}
-        customers={customers}
-        products={products}
-      />
+      <OrderList customers={customers} products={products} />
     </div>
   );
 }

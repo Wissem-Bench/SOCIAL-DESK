@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getOrdersForUser, updateOrderStatus } from "@/app/lib/actions/orders";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Pencil } from "lucide-react";
@@ -8,61 +11,94 @@ import OrderToolbar from "./OrderToolbar";
 import StatusDropdown from "./StatusDropdown";
 import OrderDetailsRow from "./OrderDetailsRow";
 import OrderPanel from "./OrderPanel";
+import TableSkeleton from "../../components/ui/TableSkeleton";
 
-export default function OrderList({ initialOrders, customers, products }) {
-  // We change the state to handle both modes
+export default function OrderList({ customers, products }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+
+  // --- UI STATE MANAGEMENT ---
   const [panelState, setPanelState] = useState({ mode: null, orderId: null }); // mode can be 'edit' or 'create'
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  // --- FILTER STATE (driven by URL) ---
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
   const [sortBy, setSortBy] = useState("order_number_desc");
-  const statuses = ["nouveau", "confirmé", "avec_livreur", "livré", "annulé"];
 
-  const filteredAndSortedOrders = useMemo(() => {
-    let result = [...initialOrders];
-    if (searchQuery) {
-      result = result.filter((order) =>
-        order.order_number.toString().includes(searchQuery.trim())
-      );
-    }
-    if (statusFilter !== "all") {
-      result = result.filter((order) => order.status === statusFilter);
-    }
-    if (clientFilter !== "all") {
-      result = result.filter((order) => order.customer_id === clientFilter);
-    }
-    switch (sortBy) {
-      case "order_number_asc":
-        result.sort((a, b) => a.order_number - b.order_number);
-        break;
-      case "date_desc":
-        result.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
-        break;
-      case "date_asc":
-        result.sort((a, b) => new Date(a.order_date) - new Date(b.order_date));
-        break;
-      case "amount_desc":
-        result.sort((a, b) => b.total_amount - a.total_amount);
-        break;
-      case "amount_asc":
-        result.sort((a, b) => a.total_amount - b.total_amount);
-        break;
-      default:
-        result.sort((a, b) => b.order_number - a.order_number);
-        break;
-    }
-    return result;
-  }, [initialOrders, searchQuery, statusFilter, clientFilter, sortBy]);
+  const queryKey = [
+    "orders",
+    {
+      search: searchQuery,
+      status: statusFilter,
+      client: clientFilter,
+      sort: sortBy,
+    },
+  ];
 
-  const orderToEdit = useMemo(() => {
-    if (panelState.mode !== "edit" || !panelState.orderId) return null;
-    return initialOrders.find((o) => o.id === panelState.orderId);
-  }, [panelState, initialOrders]);
+  // --- DATA FETCHING WITH REACT QUERY ---
+  const {
+    data: orders = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: queryKey,
+    // The query function now passes all filters to the backend
+    queryFn: () =>
+      getOrdersForUser({
+        search: searchQuery,
+        status: statusFilter,
+        client: clientFilter,
+        sort: sortBy,
+      }),
+  });
+
+  // --- MUTATIONS ---
+  // You would add mutations for create/update order here later
+  // For now, let's refactor the status update
+  const { mutate: updateStatusMutation } = useMutation({
+    mutationFn: ({ orderId, newStatus }) =>
+      updateOrderStatus(orderId, newStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (err) => alert(err.message),
+  });
+
+  // --- HANDLERS ---
+  const handleFilterChange = (filters) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
+    router.push(`/dashboard/orders?${params.toString()}`);
+  };
 
   const handleRowClick = (orderId) => {
     setExpandedOrderId((currentId) => (currentId === orderId ? null : orderId));
   };
+
+  const orderToEdit = useMemo(() => {
+    if (panelState.mode !== "edit" || !panelState.orderId) return null;
+    return orders.find((o) => o.id === panelState.orderId);
+  }, [panelState, orders]);
+
+  const tableHeaders = [
+    "N°",
+    "Client",
+    "Date",
+    "Statut",
+    "Montant",
+    "Livraison",
+    "Actions",
+  ];
 
   return (
     <>
@@ -77,182 +113,194 @@ export default function OrderList({ initialOrders, customers, products }) {
         </button>
       </div>
       <OrderToolbar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        clientFilter={clientFilter}
-        onClientChange={setClientFilter}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
+        filters={{
+          search: searchQuery,
+          status: statusFilter,
+          client: clientFilter,
+          sort: sortBy,
+        }}
+        onFilterChange={handleFilterChange}
         customers={customers}
-        statuses={statuses}
       />
 
       <div className="mt-6 overflow-x-auto bg-white rounded-lg shadow border">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th
-                scope="col"
-                className="sticky left-0 z-10 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50"
-              >
-                N°
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Client
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Date
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Statut
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Montant
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Livraison
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredAndSortedOrders.length > 0 ? (
-              filteredAndSortedOrders.flatMap((order) => [
-                <tr
-                  key={order.id}
-                  onClick={() => handleRowClick(order.id)}
-                  className="cursor-pointer hover:bg-gray-50"
-                >
-                  <td className="sticky left-0 z-10 px-6 py-4 whitespace-nowrap text-sm font-medium bg-white">
-                    <div className="flex items-center">
-                      <svg
-                        className={`w-4 h-4 mr-2 text-gray-400 transition-transform duration-200 ${
-                          expandedOrderId === order.id ? "rotate-90" : ""
-                        }`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <h3 className="text-lg font-bold">
-                        {order.status === "nouveau" ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPanelState({
-                                mode: "edit",
-                                orderId: order.id,
-                              });
-                            }}
-                            className="text-blue-600 hover:underline"
-                          >
-                            #{order.order_number}
-                          </button>
-                        ) : (
-                          <span className="text-blue-600">
-                            #{order.order_number}
-                          </span>
-                        )}
-                      </h3>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {order.customer_name || "Client inconnu"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {format(new Date(order.order_date), "dd MMM yyyy", {
-                      locale: fr,
-                    })}
-                  </td>
-                  <td
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 min-w-[150px]"
-                  >
-                    <StatusDropdown order={order} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                    {new Intl.NumberFormat("fr-FR", {
-                      style: "currency",
-                      currency: "TND",
-                    }).format(order.total_amount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.delivery_service ? (
-                      <div>
-                        <span className="font-medium">
-                          {order.delivery_service}
-                        </span>
-                        <br />
-                        <span className="text-xs text-gray-400">
-                          {order.tracking_number || "Pas de suivi"}
-                        </span>
-                      </div>
-                    ) : (
-                      <span>-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {order.status === "nouveau" ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPanelState({ mode: "edit", orderId: order.id });
-                        }}
-                        className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-normal px-4 py-1 rounded-md shadow-sm transition"
-                      >
-                        <Pencil size={14} />
-                        Modifier
-                      </button>
-                    ) : null}
-                  </td>
-                </tr>,
-                expandedOrderId === order.id && (
-                  <OrderDetailsRow key={`${order.id}-details`} order={order} />
-                ),
-              ])
-            ) : (
+        {isLoading ? (
+          <TableSkeleton headers={tableHeaders} rowCount={10} />
+        ) : isError ? (
+          <p className="p-8 text-red-500 text-center">
+            Erreur: {error.message}
+          </p>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan="8" className="text-center py-12 px-4">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Aucune commande ne correspond à vos critères
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Essayez d'ajuster vos filtres ou votre recherche.
-                  </p>
-                </td>
+                <th
+                  scope="col"
+                  className="sticky left-0 z-10 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50"
+                >
+                  N°
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Client
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Date
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Statut
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Montant
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Livraison
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {orders.length > 0 ? (
+                orders.flatMap((order) => [
+                  <tr
+                    key={order.id}
+                    onClick={() => handleRowClick(order.id)}
+                    className="cursor-pointer hover:bg-gray-50"
+                  >
+                    <td className="sticky left-0 z-10 px-6 py-4 whitespace-nowrap text-sm font-medium bg-white">
+                      <div className="flex items-center">
+                        <svg
+                          className={`w-4 h-4 mr-2 text-gray-400 transition-transform duration-200 ${
+                            expandedOrderId === order.id ? "rotate-90" : ""
+                          }`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <h3 className="text-lg font-bold">
+                          {order.status === "nouveau" ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPanelState({
+                                  mode: "edit",
+                                  orderId: order.id,
+                                });
+                              }}
+                              className="text-blue-600 hover:underline"
+                            >
+                              #{order.order_number}
+                            </button>
+                          ) : (
+                            <span className="text-blue-600">
+                              #{order.order_number}
+                            </span>
+                          )}
+                        </h3>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {order.customer_name || "Client inconnu"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {format(new Date(order.order_date), "dd MMM yyyy", {
+                        locale: fr,
+                      })}
+                    </td>
+                    <td
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 min-w-[150px]"
+                    >
+                      <StatusDropdown
+                        order={order}
+                        onStatusChange={updateStatusMutation}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      {new Intl.NumberFormat("fr-FR", {
+                        style: "currency",
+                        currency: "TND",
+                      }).format(order.total_amount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {order.delivery_service ? (
+                        <div>
+                          <span className="font-medium">
+                            {order.delivery_service}
+                          </span>
+                          <br />
+                          <span className="text-xs text-gray-400">
+                            {order.tracking_number || "Pas de suivi"}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {order.status === "nouveau" ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPanelState({ mode: "edit", orderId: order.id });
+                          }}
+                          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-normal px-4 py-1 rounded-md shadow-sm transition"
+                        >
+                          <Pencil size={14} />
+                          Modifier
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>,
+                  expandedOrderId === order.id && (
+                    <OrderDetailsRow
+                      key={`${order.id}-details`}
+                      order={order}
+                    />
+                  ),
+                ])
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center py-12 px-4">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Aucune commande ne correspond à vos critères
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Essayez d'ajuster vos filtres ou votre recherche.
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {panelState.mode && (
