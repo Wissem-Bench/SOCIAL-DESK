@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, useRef, Fragment } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Combobox, Transition } from "@headlessui/react";
 import {
@@ -12,7 +12,7 @@ import SubmitButton from "@/app/components/ui/SubmitButton";
 export default function OrderPanel({ order, customers, products, onClose }) {
   const queryClient = useQueryClient();
   const isEditMode = !!order;
-
+  console.log("order", order);
   // --- MANAGEMENT OF LOCAL FORM STATUS ---
   const [selectedCustomer, setSelectedCustomer] = useState(
     customers.find((c) => c.id === order?.customer_id) || null
@@ -356,7 +356,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                     );
                     // We determine if there is an error for this line
                     const hasError = item.hasStockError;
-
+                    console.log("lineItems", lineItems);
                     // In edit mode, the "available" stock includes what is already in the order
                     const originalQty =
                       initialLineItems.find(

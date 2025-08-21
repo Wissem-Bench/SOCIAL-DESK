@@ -1,13 +1,11 @@
 "use client";
 
-import { useUser } from "@/app/hooks/use-user";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "../components/ui/Sidebar";
 import TopNavbar from "../components/ui/TopNavbar";
 
 export default function DashboardLayoutClient({ children }) {
-  const user = useUser(); // Get the user directly from the context!
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();

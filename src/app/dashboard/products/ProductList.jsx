@@ -229,7 +229,7 @@ export default function ProductList() {
 
       <div className="mt-6 overflow-x-auto bg-white rounded-lg shadow border">
         {isLoading ? (
-          <TableSkeleton headers={tableHeaders} rowCount={6} />
+          <TableSkeleton headers={tableHeaders} rowCount={10} />
         ) : isError ? (
           <p className="text-center p-12 text-red-500">
             Erreur: {error.message}

@@ -5,14 +5,12 @@ import {
   getAdvancedDashboardStats,
   getRecentActivity,
 } from "@/app/lib/actions/dashboard";
-import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 
 export default async function DashboardPage() {
-  const { supabase, user } = await getSupabaseWithUser();
   // Fetch once from the server
   const [{ stats }, { activities }] = await Promise.all([
-    getAdvancedDashboardStats({ supabase, user }), // now returns both periods
-    getRecentActivity({ supabase, user }),
+    getAdvancedDashboardStats(),
+    getRecentActivity(),
   ]);
 
   return (

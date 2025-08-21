@@ -4,20 +4,27 @@ import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 import { revalidatePath } from "next/cache";
 
 // ACTION TO RETRIEVE ALL USER ORDERS
-export async function getOrdersForUser({ supabase, user, filters = {} }) {
-  // a query that retrieves orders and associated customer information,
-  // for each order, the items and associated product information.
+export async function getOrdersForUser(filters = {}) {
+  const { supabase, user } = await getSupabaseWithUser();
+  if (!user) throw new Error("Action non autorisée.");
+
   let query = supabase
     .from("orders")
     .select(
-      `*, customers ( full_name ), order_items ( quantity, products ( name ) )`
+      `id, order_number, order_date, total_amount, status, delivery_service, tracking_number, customer_id, notes,
+       customers ( id, full_name ),
+       order_items ( quantity, products ( id, name ) )`
     )
     .eq("user_id", user.id);
 
+  // --- SEARCH BY ORDER NUMBER ---
   // Apply filters
   if (filters.search) {
-    query = query.ilike("customers.full_name", `%${filters.search}%`); // Search by customer name
+    console.log("filters.search", filters.search);
+    query = query.eq("order_number", filters.search);
   }
+
+  // --- FILTERS ---
   if (filters.status && filters.status !== "all") {
     query = query.eq("status", filters.status);
   }
@@ -25,20 +32,65 @@ export async function getOrdersForUser({ supabase, user, filters = {} }) {
     query = query.eq("customer_id", filters.client);
   }
 
-  // Apply sorting
-  const [sortField, sortOrder] = (filters.sort || "order_number_desc").split(
-    "_"
-  );
-  if (sortField && sortOrder) {
-    query = query.order(sortField, { ascending: sortOrder === "asc" });
+  // --- SORTING ---
+  // On accepte tes valeurs actuelles de l’UI et on les mappe vers les colonnes réelles
+  const sortMap = {
+    order_number_asc: ["order_number", true],
+    order_number_desc: ["order_number", false],
+    date_asc: ["order_date", true], // <— UI envoie "date_*"
+    date_desc: ["order_date", false],
+    amount_asc: ["total_amount", true], // <— UI envoie "amount_*"
+    amount_desc: ["total_amount", false],
+
+    // on accepte aussi les versions explicites si jamais tu changes l’UI plus tard
+    order_date_asc: ["order_date", true],
+    order_date_desc: ["order_date", false],
+    total_amount_asc: ["total_amount", true],
+    total_amount_desc: ["total_amount", false],
+  };
+
+  const sortKey = filters.sort || "order_number_desc";
+  const mapping = sortMap[sortKey];
+  if (mapping) {
+    const [col, asc] = mapping;
+    query = query.order(col, { ascending: asc });
   }
 
   const { data, error } = await query;
-
   if (error) {
     console.error("Erreur BDD getOrdersForUser:", error);
     throw new Error("Impossible de récupérer les commandes.");
   }
+  return data;
+}
+
+// ACTION TO GET THE DETAILED ITEMS FOR A SINGLE ORDER
+export async function getOrderDetails(orderId) {
+  const { supabase, user } = await getSupabaseWithUser();
+  if (!user) throw new Error("Action non autorisée.");
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      notes,
+      order_items (
+        quantity,
+        selling_price,
+        products ( name )
+      )
+    `
+    )
+    .eq("id", orderId)
+    .eq("user_id", user.id) // Security check
+    .single();
+
+  if (error) {
+    console.error("Get Order Details Error:", error);
+    throw new Error("Impossible de charger les détails de la commande.");
+  }
+
   return data;
 }
 

@@ -214,9 +214,6 @@ export async function getStockMovements(productId) {
     .eq("user_id", user.id)
     .single();
 
-  console.log("product", product);
-  console.log("productId", productId);
-  console.log("productError", productError);
   if (productError || !product) {
     throw new Error("Produit introuvable ou accès non autorisé.");
   }

@@ -1,63 +1,83 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOrdersForUser, updateOrderStatus } from "@/app/lib/actions/orders";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { Pencil } from "lucide-react";
+import { getCustomers } from "@/app/lib/actions/customers";
+import { getProductsForUser } from "@/app/lib/actions/products";
+import { useDebounce } from "@/app/hooks/use-debounce";
 import OrderToolbar from "./OrderToolbar";
 import StatusDropdown from "./StatusDropdown";
 import OrderDetailsRow from "./OrderDetailsRow";
 import OrderPanel from "./OrderPanel";
 import TableSkeleton from "../../components/ui/TableSkeleton";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Pencil } from "lucide-react";
 
-export default function OrderList({ customers, products }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default function OrderList() {
   const queryClient = useQueryClient();
 
   // --- UI STATE MANAGEMENT ---
   const [panelState, setPanelState] = useState({ mode: null, orderId: null }); // mode can be 'edit' or 'create'
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  // --- FILTER STATE (driven by URL) ---
+  // --- FILTER STATES ---
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
   const [sortBy, setSortBy] = useState("order_number_desc");
 
-  const queryKey = [
-    "orders",
-    {
-      search: searchQuery,
-      status: statusFilter,
-      client: clientFilter,
-      sort: sortBy,
-    },
-  ];
+  // We debounce the search query to avoid excessive API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const filters = {
+    search: searchQuery.length >= 4 ? debouncedSearchQuery : "",
+    status: statusFilter,
+    client: clientFilter,
+    sort: sortBy,
+  };
+
+  const queryKey = ["orders", filters];
 
   // --- DATA FETCHING WITH REACT QUERY ---
   const {
     data: orders = [],
-    isLoading,
-    isError,
-    error,
+    isLoading: isLoadingOrders,
+    isError: isOrdersError,
+    error: ordersError,
   } = useQuery({
     queryKey: queryKey,
     // The query function now passes all filters to the backend
-    queryFn: () =>
-      getOrdersForUser({
-        search: searchQuery,
-        status: statusFilter,
-        client: clientFilter,
-        sort: sortBy,
-      }),
+    queryFn: () => getOrdersForUser(filters),
   });
 
+  const {
+    data: customers = [],
+    isLoading: isLoadingCustomers,
+    isError: isCustomersError,
+    error: customersError,
+  } = useQuery({
+    queryKey: ["customers", { isArchived: false }],
+    queryFn: () => getCustomers({ isArchived: false }),
+  });
+
+  const {
+    data: products = [],
+    isLoading: isLoadingProducts,
+    isError: isProductsError,
+    error: productsError,
+  } = useQuery({
+    queryKey: ["products", { view: "active" }],
+    queryFn: () => getProductsForUser({ isArchived: false }),
+  });
+
+  const isLoading = isLoadingOrders || isLoadingCustomers || isLoadingProducts;
+  const isError = isOrdersError || isCustomersError || isProductsError;
+  const error = ordersError || customersError || productsError;
+
   // --- MUTATIONS ---
-  // You would add mutations for create/update order here later
+  // We would add mutations for create/update order here later
   // For now, let's refactor the status update
   const { mutate: updateStatusMutation } = useMutation({
     mutationFn: ({ orderId, newStatus }) =>
@@ -69,18 +89,6 @@ export default function OrderList({ customers, products }) {
   });
 
   // --- HANDLERS ---
-  const handleFilterChange = (filters) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    });
-    router.push(`/dashboard/orders?${params.toString()}`);
-  };
-
   const handleRowClick = (orderId) => {
     setExpandedOrderId((currentId) => (currentId === orderId ? null : orderId));
   };
@@ -112,14 +120,16 @@ export default function OrderList({ customers, products }) {
           + Nouvelle Commande
         </button>
       </div>
+
       <OrderToolbar
-        filters={{
-          search: searchQuery,
-          status: statusFilter,
-          client: clientFilter,
-          sort: sortBy,
-        }}
-        onFilterChange={handleFilterChange}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        clientFilter={clientFilter}
+        onClientChange={setClientFilter}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
         customers={customers}
       />
 
@@ -225,7 +235,7 @@ export default function OrderList({ customers, products }) {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {order.customer_name || "Client inconnu"}
+                      {order.customers?.full_name || "Client inconnu"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {format(new Date(order.order_date), "dd MMM yyyy", {
@@ -282,7 +292,7 @@ export default function OrderList({ customers, products }) {
                   expandedOrderId === order.id && (
                     <OrderDetailsRow
                       key={`${order.id}-details`}
-                      order={order}
+                      orderId={order.id}
                     />
                   ),
                 ])

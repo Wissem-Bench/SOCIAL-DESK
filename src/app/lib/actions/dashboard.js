@@ -18,7 +18,11 @@ export async function checkMetaConnection() {
   return count;
 }
 
-export async function getAdvancedDashboardStats({ supabase, user }) {
+export async function getAdvancedDashboardStats() {
+  const { supabase, user } = await getSupabaseWithUser();
+
+  if (!user) throw new Error("Action non autorisée.");
+
   const connectionResult = await supabase
     .from("social_connections")
     .select("id", { count: "exact", head: true })
@@ -40,7 +44,11 @@ export async function getAdvancedDashboardStats({ supabase, user }) {
   return { stats: { ...data, count } };
 }
 
-export async function getRecentActivity({ supabase, user }) {
+export async function getRecentActivity() {
+  const { supabase, user } = await getSupabaseWithUser();
+
+  if (!user) throw new Error("Action non autorisée.");
+
   // Fetch the 5 most recent orders with their customer's name
   const { data, error } = await supabase
     .from("orders")

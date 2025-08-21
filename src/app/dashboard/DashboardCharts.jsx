@@ -5,7 +5,6 @@ import RevenueChart from "./charts/RevenueChart";
 import PlatformChart from "./charts/PlatformChart";
 import TopProductsChart from "./charts/TopProductsChart";
 import ActivityFeed from "./charts/ActivityFeed";
-import ConnectMetaCard from "@/app/components/ui/meta/ConnectMetaCard";
 import PeriodSelector from "./PeriodSelector";
 
 // Helper for currency formatting
@@ -33,10 +32,6 @@ export default function DashboardCharts({ allStats, activities }) {
   const stats = allStats[selectedPeriod];
 
   if (!stats) return null;
-
-  if (stats.count === 0) {
-    return <ConnectMetaCard />;
-  }
 
   return (
     <>
