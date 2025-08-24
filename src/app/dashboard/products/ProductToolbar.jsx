@@ -41,13 +41,13 @@ export default function ProductToolbar({
         <div className="content-end">
           <button
             onClick={() => setIsCategoryModalOpen(true)}
-            className="px-3 py-2 text-sm font-semibold text-white bg-gray-600 rounded-md hover:bg-gray-700"
+            className="px-3 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
           >
             Gérer les catégories
           </button>
           <button
             onClick={() => setIsArrivalModalOpen(true)}
-            className="px-3 py-2 mx-3 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700"
+            className="px-3 py-2 mx-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
           >
             Enregistrer un Arrivage
           </button>
@@ -56,7 +56,7 @@ export default function ProductToolbar({
               setIsPanelOpen(true),
               setPanelState({ mode: "create", product: null })
             )}
-            className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            className="px-3 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
           >
             + Ajouter un Produit
           </button>

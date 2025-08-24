@@ -65,7 +65,6 @@ export async function getCustomerOrders(customerId) {
     console.error("Erreur BDD (getCustomerOrders):", error.message);
     throw new Error("Impossible de récupérer les détails du client.");
   }
-
   return data;
 }
 

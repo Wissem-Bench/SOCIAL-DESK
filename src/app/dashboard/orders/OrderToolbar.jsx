@@ -27,7 +27,7 @@ export default function OrderToolbar({
             placeholder="Ex: 1024..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
         {/* 2. Filter by status */}
@@ -42,7 +42,7 @@ export default function OrderToolbar({
             id="status-filter"
             value={statusFilter}
             onChange={(e) => onStatusChange(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="all">Tous les statuts</option>
             {statuses.map((status) => (
@@ -64,7 +64,7 @@ export default function OrderToolbar({
             id="client-filter"
             value={clientFilter}
             onChange={(e) => onClientChange(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="all">Tous les clients</option>
             {customers.map((customer) => (
@@ -86,7 +86,7 @@ export default function OrderToolbar({
             id="sort-by"
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="order_number_desc">
               N° de commande (décroissant)

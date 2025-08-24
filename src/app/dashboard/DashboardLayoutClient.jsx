@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import Sidebar from "../components/ui/Sidebar";
 import TopNavbar from "../components/ui/TopNavbar";
 
-export default function DashboardLayoutClient({ children }) {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+export default function DashboardLayoutClient({ children, user }) {
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
@@ -65,7 +65,11 @@ export default function DashboardLayoutClient({ children }) {
         className={`transition-all duration-300 ease-in-out min-h-screen flex flex-col`}
         style={{ paddingLeft: isSidebarExpanded ? "16rem" : "5rem" }}
       >
-        <TopNavbar className="flex-shrink-0" onMenuToggle={handleMenuToggle} />
+        <TopNavbar
+          user={user}
+          className="flex-shrink-0"
+          onMenuToggle={handleMenuToggle}
+        />
         <main className="flex-1 p-4 md:p-6 overflow-hidden">{children}</main>
       </div>
     </div>

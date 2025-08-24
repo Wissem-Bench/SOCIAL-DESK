@@ -7,7 +7,7 @@ export default function ActivityFeed({ activities }) {
   const getTypeClass = (type) => {
     switch (type) {
       case "NOUVELLE COMMANDE":
-        return "bg-blue-100 text-blue-800";
+        return "bg-indigo-100 text-indigo-800";
       default:
         return "bg-gray-100 text-gray-800";
     }

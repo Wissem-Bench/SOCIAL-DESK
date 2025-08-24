@@ -342,7 +342,7 @@ export default function ProductList() {
                                 product: product,
                               });
                             }}
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-indigo-600 hover:underline"
                           >
                             Ajuster
                           </button>

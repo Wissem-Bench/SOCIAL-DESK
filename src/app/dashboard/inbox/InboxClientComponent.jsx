@@ -217,7 +217,7 @@ export default function InboxClientComponent({ products }) {
                   onClick={() => setSelectedConversation(convo)}
                   className={`p-4 cursor-pointer border-l-4 ${
                     selectedConversation?.id === convo.id
-                      ? "border-blue-500 bg-gray-200"
+                      ? "border-indigo-500 bg-gray-200"
                       : "border-transparent hover:bg-gray-100"
                   } flex justify-between items-center`}
                 >
@@ -255,7 +255,7 @@ export default function InboxClientComponent({ products }) {
                 </h2>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
+                  className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
                 >
                   Créer une commande
                 </button>
@@ -271,7 +271,7 @@ export default function InboxClientComponent({ products }) {
                     <div
                       className={`p-3 rounded-lg max-w-lg break-words whitespace-pre-wrap ${
                         msg.sender_type === "vendeur"
-                          ? "bg-blue-500 text-white ml-auto"
+                          ? "bg-indigo-500 text-white ml-auto"
                           : "bg-white"
                       }`}
                     >
@@ -308,7 +308,7 @@ export default function InboxClientComponent({ products }) {
                   />
                   <SubmitButton
                     pendingText="Envoi..."
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-300"
                   >
                     Envoyer
                   </SubmitButton>

@@ -35,7 +35,7 @@ export default function CustomerToolbar({
 
         <button
           onClick={() => setPanelState({ isOpen: true, customer: null })}
-          className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
           + Ajouter un client
         </button>

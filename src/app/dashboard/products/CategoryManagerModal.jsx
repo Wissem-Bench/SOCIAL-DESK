@@ -98,7 +98,7 @@ export default function CategoryManagerModal({ initialCategories, onClose }) {
           <SubmitButton
             pendingText="Ajout..."
             isPending={isCreating}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm"
           >
             Ajouter
           </SubmitButton>

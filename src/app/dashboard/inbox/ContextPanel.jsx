@@ -80,7 +80,7 @@ function CustomerDetailsView({ customer }) {
                 className="bg-white p-3 rounded-lg shadow-sm text-sm"
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-blue-600">
+                  <span className="font-bold text-indigo-600">
                     #{order.order_number}
                   </span>
                   <span className="font-semibold">
@@ -130,7 +130,7 @@ function ProspectView({ conversation }) {
       <form action={handleAddCustomer}>
         <button
           type="submit"
-          className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
           Ajouter comme client
         </button>

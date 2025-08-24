@@ -1,7 +1,8 @@
 "use client";
-import LogoutButton from "@/app/components/ui/LogoutButton";
+import ProfileDropdown from "@/app/components/ui/ProfileDropdown";
+import NotificationsPanel from "./NotificationsPanel";
 
-export default function TopNavbar({ onMenuToggle }) {
+export default function TopNavbar({ onMenuToggle, user }) {
   return (
     <header className="sticky top-0 bg-white shadow-sm z-30">
       <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center">
@@ -27,10 +28,13 @@ export default function TopNavbar({ onMenuToggle }) {
           </svg>
         </button>
 
-        {/* We can add other elements here later, like a user profile dropdown */}
-        <div className="flex-1 flex justify-end">
-          {/* Placeholder for future items */}
-          <LogoutButton />
+        <div className="flex-1 flex justify-end items-center gap-x-4">
+          <NotificationsPanel />
+
+          {/* Vertical separator */}
+          <div className="h-6 w-px bg-gray-200" />
+
+          <ProfileDropdown user={user} />
         </div>
       </div>
     </header>

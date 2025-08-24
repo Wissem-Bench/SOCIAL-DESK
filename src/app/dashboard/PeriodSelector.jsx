@@ -7,7 +7,7 @@ export default function PeriodSelector({ selectedPeriod, onPeriodChange }) {
   ];
 
   return (
-    <div className="flex justify-end">
+    <div className="self-end">
       <div className="flex space-x-2 bg-gray-200 p-1 rounded-lg">
         {periods.map((period) => (
           <button

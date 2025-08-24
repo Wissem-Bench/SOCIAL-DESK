@@ -139,16 +139,16 @@ export default function StockArrivalModal({ products, onClose }) {
                 <button
                   type="button"
                   onClick={() => removeLineItem(index)}
-                  className="text-red-500 hover:text-red-700"
+                  className="p-1 text-red-500 hover:text-red-700 mt-1"
                 >
-                  Retirer
+                  <XCircleIcon className="h-5 w-5" />
                 </button>
               </div>
             ))}
             <button
               type="button"
               onClick={addLineItem}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-indigo-600 hover:underline"
             >
               + Ajouter un produit
             </button>
@@ -168,7 +168,7 @@ export default function StockArrivalModal({ products, onClose }) {
             <SubmitButton
               pendingText="Enregistrement..."
               isPending={isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
             >
               Enregistrer l'arrivage
             </SubmitButton>

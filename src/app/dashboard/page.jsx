@@ -15,13 +15,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord</h1>
-          <p className="mt-2 text-gray-600">Aperçu de votre activité.</p>
-        </div>
-      </div>
-
       <Suspense fallback={<DashboardSkeleton />}>
         {/* Pass all data to the client component */}
         <DashboardCharts allStats={stats} activities={activities} />

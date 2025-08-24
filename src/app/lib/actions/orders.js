@@ -20,7 +20,6 @@ export async function getOrdersForUser(filters = {}) {
   // --- SEARCH BY ORDER NUMBER ---
   // Apply filters
   if (filters.search) {
-    console.log("filters.search", filters.search);
     query = query.eq("order_number", filters.search);
   }
 
@@ -92,36 +91,6 @@ export async function getOrderDetails(orderId) {
   }
 
   return data;
-}
-
-// CREATE ORDER FROM CONVERSATION
-export async function createOrderFromConversation(customerDetails, orderItems) {
-  const { supabase, user } = await getSupabaseWithUser();
-
-  if (!customerDetails || !orderItems || orderItems.length === 0) {
-    throw new Error("Données de commande invalides.");
-  }
-
-  const { error, data: newOrderId } = await supabase.rpc(
-    "create_order_from_conversation",
-    {
-      p_user_id: user.id,
-      p_customer_platform_id: customerDetails.id,
-      p_customer_name: customerDetails.name,
-      p_platform: "facebook", // To be dynamic later
-      p_order_items: orderItems,
-    }
-  );
-
-  if (error) {
-    console.error("Erreur RPC create_order:", error);
-    throw new Error("Impossible de créer la commande.");
-  }
-
-  revalidatePath("/dashboard/orders");
-  revalidatePath("/dashboard/inbox");
-
-  return { success: "Commande créée avec succès !", orderId: newOrderId };
 }
 
 // ACTION TO UPDATE ORDER STATUS

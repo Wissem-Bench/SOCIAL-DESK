@@ -12,7 +12,6 @@ import SubmitButton from "@/app/components/ui/SubmitButton";
 export default function OrderPanel({ order, customers, products, onClose }) {
   const queryClient = useQueryClient();
   const isEditMode = !!order;
-  console.log("order", order);
   // --- MANAGEMENT OF LOCAL FORM STATUS ---
   const [selectedCustomer, setSelectedCustomer] = useState(
     customers.find((c) => c.id === order?.customer_id) || null
@@ -308,7 +307,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                             className={({ active }) =>
                               `relative cursor-default select-none py-2 pl-10 pr-4 ${
                                 active
-                                  ? "bg-blue-600 text-white"
+                                  ? "bg-indigo-600 text-white"
                                   : "text-gray-900"
                               }`
                             }
@@ -325,7 +324,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                                 {selected ? (
                                   <span
                                     className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                                      active ? "text-white" : "text-blue-600"
+                                      active ? "text-white" : "text-indigo-600"
                                     }`}
                                   >
                                     <CheckIcon
@@ -356,7 +355,6 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                     );
                     // We determine if there is an error for this line
                     const hasError = item.hasStockError;
-                    console.log("lineItems", lineItems);
                     // In edit mode, the "available" stock includes what is already in the order
                     const originalQty =
                       initialLineItems.find(
@@ -463,7 +461,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                   className={`mt-2 text-sm ${
                     isAddLineDisabled
                       ? "text-gray-400 cursor-not-allowed"
-                      : "text-blue-600 hover:underline"
+                      : "text-indigo-600 hover:underline"
                   }`}
                   disabled={isAddLineDisabled}
                 >
@@ -536,7 +534,7 @@ export default function OrderPanel({ order, customers, products, onClose }) {
                 className={`px-4 py-2 rounded-md text-sm ${
                   isSubmitDisabled
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
+                    : "text-white bg-indigo-600 hover:bg-indigo-700"
                 }`}
                 disabled={isSubmitDisabled}
               >

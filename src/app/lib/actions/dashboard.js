@@ -12,8 +12,7 @@ export async function checkMetaConnection() {
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("Meta Connection Error:", error);
-    return 0;
+    throw new Error("Meta Connection Error:");
   }
   return count;
 }
@@ -31,13 +30,12 @@ export async function getAdvancedDashboardStats() {
   const { count, error: connectionError } = connectionResult;
 
   if (connectionError) {
-    console.error("Connection Error:", connectionError);
+    throw new Error("Connection Error");
   }
 
   const { data, error } = await supabase.rpc("get_advanced_dashboard_stats");
 
   if (error) {
-    console.error("Advanced Dashboard Stats RPC Error:", error);
     throw new Error("Failed to load advanced dashboard statistics.");
   }
 
@@ -66,7 +64,6 @@ export async function getRecentActivity() {
     .limit(5);
 
   if (error) {
-    console.error("Recent Activity Error:", error);
     throw new Error("Impossible de charger l'activité récente.");
   }
 

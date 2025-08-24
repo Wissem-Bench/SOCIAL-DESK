@@ -272,7 +272,7 @@ export default function DraggableOrderPopup({
                 className={`mt-2 text-sm ${
                   isAddLineDisabled
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-blue-600 hover:underline"
+                    : "text-indigo-600 hover:underline"
                 }`}
                 disabled={isAddLineDisabled}
               >
@@ -317,7 +317,7 @@ export default function DraggableOrderPopup({
                 className={`px-4 py-2 rounded-md text-sm ${
                   isSubmitDisabled
                     ? "bg-gray-300 text-gray-500"
-                    : "bg-blue-600 text-white"
+                    : "text-white bg-indigo-600 hover:bg-indigo-700"
                 }`}
                 disabled={isSubmitDisabled}
               >

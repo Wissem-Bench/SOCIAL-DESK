@@ -40,7 +40,7 @@ export default function RevenueChart({ data }) {
         data: data.map((item) => item.Revenu),
       },
     ],
-    color: ["#3b82f6"],
+    color: ["#4f46e5"],
   };
 
   return (

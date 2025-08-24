@@ -166,7 +166,7 @@ export default function PrivacyPolicyPage() {
             <p>
               <a
                 href="mailto:contact@social-desk.com"
-                className="text-blue-600 hover:underline"
+                className="text-indigo-600 hover:underline"
               >
                 contact@social-desk.com
               </a>

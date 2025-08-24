@@ -16,7 +16,7 @@ import TableSkeleton from "../../components/ui/TableSkeleton";
 import ConfirmationModal from "@/app/components/ui/ConfirmationModal";
 
 // --- MAIN COMPONENT: CUSTOMER LIST ---
-export default function CustomerList({ initialCustomers }) {
+export default function CustomerList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -85,6 +85,12 @@ export default function CustomerList({ initialCustomers }) {
     });
 
   // --- HANDLERS ---
+  const handleRowClick = (customerId) => {
+    setExpandedCustomerId((currentId) =>
+      currentId === customerId ? null : customerId
+    );
+  };
+
   const handleViewChange = (newView) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("view", newView);
@@ -290,7 +296,10 @@ export default function CustomerList({ initialCustomers }) {
                       </td>
                     </tr>,
                     expandedCustomerId === customer.id && (
-                      <CustomerOrdersHistoryRow customerId={customer.id} />
+                      <CustomerOrdersHistoryRow
+                        key="customer.id"
+                        customerId={customer.id}
+                      />
                     ),
                   ];
                 })

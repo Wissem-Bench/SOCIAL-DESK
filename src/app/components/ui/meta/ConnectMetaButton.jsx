@@ -25,7 +25,7 @@ export default function ConnectMetaButton() {
   return (
     <button
       onClick={handleConnect}
-      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
     >
       Connecter avec Meta (Facebook/Instagram)
     </button>

@@ -164,7 +164,7 @@ export default function SignUp() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+            className="w-full p-3 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
           >
             {loading ? "Création en cours..." : "Créer le compte"}
           </button>
@@ -184,7 +184,7 @@ export default function SignUp() {
           Vous avez déjà un compte ?{" "}
           <Link
             href="/login"
-            className="font-medium text-blue-600 hover:underline"
+            className="font-medium text-indigo-600 hover:underline"
           >
             Se connecter
           </Link>

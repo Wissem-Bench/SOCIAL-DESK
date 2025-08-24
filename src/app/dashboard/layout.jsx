@@ -1,10 +1,13 @@
 import { checkMetaConnection } from "@/app/lib/actions/dashboard";
+import { getAuthenticatedUserProfile } from "../lib/actions/profiles";
 import QueryProvider from "@/app/components/providers/QueryProvider";
 import DashboardLayoutClient from "./DashboardLayoutClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({ children }) {
+  const userProfile = await getAuthenticatedUserProfile();
+
   // const hasMetaConnection = await checkMetaConnection();
   // if (hasMetaConnection === 0) {
   //   return <ConnectMetaCard />;
@@ -12,7 +15,9 @@ export default async function DashboardLayout({ children }) {
 
   return (
     <QueryProvider>
-      <DashboardLayoutClient>{children}</DashboardLayoutClient>
+      <DashboardLayoutClient user={userProfile}>
+        {children}
+      </DashboardLayoutClient>
     </QueryProvider>
   );
 }

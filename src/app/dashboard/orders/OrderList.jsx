@@ -115,7 +115,7 @@ export default function OrderList() {
         {/* 2. The "New Order" button sets the state to 'create' mode */}
         <button
           onClick={() => setPanelState({ mode: "create", orderId: null })}
-          className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
           + Nouvelle Commande
         </button>
@@ -222,12 +222,12 @@ export default function OrderList() {
                                   orderId: order.id,
                                 });
                               }}
-                              className="text-blue-600 hover:underline"
+                              className="text-indigo-600 hover:underline"
                             >
                               #{order.order_number}
                             </button>
                           ) : (
-                            <span className="text-blue-600">
+                            <span className="text-indigo-600">
                               #{order.order_number}
                             </span>
                           )}

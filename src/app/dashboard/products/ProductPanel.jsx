@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment, useEffect } from "react";
+import { useState, Fragment } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Combobox, Transition } from "@headlessui/react";
 import {
@@ -171,7 +171,7 @@ export default function ProductPanel({
                             className={({ active }) =>
                               `relative cursor-default select-none py-2 pl-10 pr-4 ${
                                 active
-                                  ? "bg-blue-600 text-white"
+                                  ? "bg-indigo-600 text-white"
                                   : "text-gray-900"
                               }`
                             }
@@ -189,7 +189,7 @@ export default function ProductPanel({
                                 {selected ? (
                                   <span
                                     className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                                      active ? "text-white" : "text-blue-600"
+                                      active ? "text-white" : "text-indigo-600"
                                     }`}
                                   >
                                     <CheckIcon
@@ -270,7 +270,7 @@ export default function ProductPanel({
             <SubmitButton
               pendingText="Sauvegarde..."
               isPending={isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
             >
               {isEditMode ? "Enregistrer" : "Créer le produit"}
             </SubmitButton>

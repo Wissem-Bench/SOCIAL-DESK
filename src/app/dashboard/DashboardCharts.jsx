@@ -35,11 +35,17 @@ export default function DashboardCharts({ allStats, activities }) {
 
   return (
     <>
-      {/* Period Switcher */}
-      <PeriodSelector
-        selectedPeriod={selectedPeriod}
-        onPeriodChange={setSelectedPeriod}
-      />
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+        <div className="self-start">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord</h1>
+          <p className="mt-2 text-gray-600">Aperçu de votre activité.</p>
+        </div>
+        {/* Period Switcher */}
+        <PeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
+      </div>
 
       {/* KPI CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
