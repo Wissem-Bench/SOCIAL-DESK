@@ -92,7 +92,11 @@ export default function StockAdjustmentModal({ product, onClose }) {
             <SubmitButton
               pendingText="Ajustement..."
               isPending={isPending}
-              className="px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              className={`px-4 py-2 rounded-md ${
+                isPending
+                  ? "bg-gray-300 text-gray-500"
+                  : "text-white bg-indigo-600 hover:bg-indigo-700"
+              }`}
             >
               Confirmer l'ajustement
             </SubmitButton>

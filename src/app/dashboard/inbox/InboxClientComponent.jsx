@@ -149,7 +149,7 @@ export default function InboxClientComponent({ products }) {
           selectedConversation.customer_id
         );
         if (!result.error) {
-          setCustomerDetails(result.customer);
+          setCustomerDetails(result);
         }
         setIsContextLoading(false);
       };
@@ -185,6 +185,7 @@ export default function InboxClientComponent({ products }) {
     const result = await getCustomerDetailsForInbox(
       selectedConversation.customer_id
     );
+
     if (!result.error) {
       setCustomerDetails(result.customer);
     }

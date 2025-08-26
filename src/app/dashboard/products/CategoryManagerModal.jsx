@@ -98,7 +98,11 @@ export default function CategoryManagerModal({ initialCategories, onClose }) {
           <SubmitButton
             pendingText="Ajout..."
             isPending={isCreating}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm"
+            className={`px-4 py-2 rounded-md text-sm ${
+              isCreating
+                ? "bg-gray-300 text-gray-500"
+                : "text-white bg-indigo-600 hover:bg-indigo-700"
+            }`}
           >
             Ajouter
           </SubmitButton>
@@ -124,7 +128,9 @@ export default function CategoryManagerModal({ initialCategories, onClose }) {
                   <SubmitButton
                     pendingText="..."
                     isPending={isUpdating}
-                    className="text-sm text-green-600"
+                    className={`text-sm ${
+                      isUpdating ? "text-gray-500" : "text-green-600"
+                    }`}
                   >
                     OK
                   </SubmitButton>

@@ -153,7 +153,11 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
             <SubmitButton
               pendingText="Sauvegarde..."
               isPending={isPending}
-              className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md ho text-sm"
+              className={`px-4 py-2 rounded-md text-sm ${
+                isPending
+                  ? "bg-gray-300 text-gray-500"
+                  : "text-white bg-indigo-600 hover:bg-indigo-700"
+              }`}
             >
               {isEditMode ? "Enregistrer" : "Créer le client"}
             </SubmitButton>

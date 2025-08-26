@@ -63,9 +63,9 @@ export default function ProductList() {
   // --- PRODUCTS FETCHING ---
   const {
     data: products = [],
-    isLoading,
-    isError,
-    error,
+    isLoading: isLoadingProducts,
+    isError: isProductsError,
+    error: productsError,
   } = useQuery({
     queryKey: queryKey,
     queryFn: () =>
@@ -77,10 +77,15 @@ export default function ProductList() {
     data: categories = [], // Default to an empty array
     isLoading: isLoadingCategories,
     isError: isCategoriesError,
+    error: categoriesError,
   } = useQuery({
     queryKey: ["categories"], // Unique key for this data
     queryFn: () => getCategories().then((res) => res.categories), // The function that fetches the data
   });
+
+  const isInitialLoading = isLoadingProducts || isLoadingCategories;
+  const isError = isProductsError || isCategoriesError;
+  const error = productsError || categoriesError;
 
   // --- MUTATIONS ---
   const { mutate: archiveProductMutation, isPending: isArchiving } =
@@ -182,13 +187,6 @@ export default function ProductList() {
     return result;
   }, [products, searchQuery, categoryFilter, stockFilter, sortBy]);
 
-  if (isLoadingCategories)
-    return <p className="p-8">Chargement des données...</p>;
-  if (isCategoriesError)
-    return (
-      <p className="p-8 text-red-500">Erreur de chargement des catégories.</p>
-    );
-
   const getStockClass = (quantity) => {
     if (quantity === 0) return "text-red-600 font-bold";
     if (quantity <= 5) return "text-yellow-600 font-semibold";
@@ -228,7 +226,7 @@ export default function ProductList() {
       />
 
       <div className="mt-6 overflow-x-auto bg-white rounded-lg shadow border">
-        {isLoading ? (
+        {isInitialLoading ? (
           <TableSkeleton headers={tableHeaders} rowCount={10} />
         ) : isError ? (
           <p className="text-center p-12 text-red-500">

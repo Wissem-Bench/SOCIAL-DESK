@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase/client";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function Login() {
   // State for form fields
@@ -36,7 +37,7 @@ export default function Login() {
         setLoading(false);
       } else if (data.user) {
         // Handle successful login
-        setMessage("Connexion réussie ! Redirection en cours...");
+        setMessage(null);
         setIsSuccess(true);
         router.push("/dashboard");
         // This is crucial to ensure the server recognizes the new session
@@ -101,13 +102,18 @@ export default function Login() {
           </div>
 
           {/* Submit Button */}
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Connexion en cours..."
+            className={`w-full p-3 rounded-md ${
+              loading
+                ? "bg-gray-300 text-gray-500"
+                : "text-white bg-indigo-600 hover:bg-indigo-700"
+            }`}
             disabled={loading}
-            className="w-full p-3 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+            isPending={loading}
           >
-            {loading ? "Connexion en cours..." : "Se connecter"}
-          </button>
+            Se connecter
+          </SubmitButton>
         </form>
 
         {/* Message Display */}

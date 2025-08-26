@@ -168,7 +168,11 @@ export default function StockArrivalModal({ products, onClose }) {
             <SubmitButton
               pendingText="Enregistrement..."
               isPending={isPending}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              className={`px-4 py-2 rounded-md ${
+                isPending
+                  ? "bg-gray-300 text-gray-500"
+                  : "text-white bg-indigo-600 hover:bg-indigo-700"
+              }`}
             >
               Enregistrer l'arrivage
             </SubmitButton>

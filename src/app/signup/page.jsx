@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 import Link from "next/link";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function SignUp() {
   // State for all form fields
@@ -161,13 +162,18 @@ export default function SignUp() {
             />
           </div>
 
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Création en cours..."
+            className={`w-full p-3 rounded-md ${
+              loading
+                ? "bg-gray-300 text-gray-500"
+                : "text-white bg-indigo-600 hover:bg-indigo-700"
+            }`}
             disabled={loading}
-            className="w-full p-3 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+            isPending={loading}
           >
-            {loading ? "Création en cours..." : "Créer le compte"}
-          </button>
+            Créer le compte
+          </SubmitButton>
         </form>
 
         {message && (
