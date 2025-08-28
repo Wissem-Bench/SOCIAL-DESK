@@ -95,9 +95,9 @@ export async function updateProduct({ id, formData }) {
 
   if (error) {
     console.error("Update Product Error:", error.message);
-    return {
-      error: "Une erreur est survenue lors de la modification du produit.",
-    };
+    throw new Error(
+      "Une erreur est survenue lors de la modification du produit."
+    );
   }
 
   revalidatePath("/dashboard/products");

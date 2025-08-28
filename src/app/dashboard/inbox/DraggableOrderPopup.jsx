@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useRef } from "react";
 import Draggable from "react-draggable";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { createFullOrder } from "@/app/lib/actions/orders";
 import SubmitButton from "@/app/components/ui/SubmitButton";
@@ -12,6 +14,7 @@ export default function DraggableOrderPopup({
   onClose,
   onOrderCreated,
 }) {
+  const queryClient = useQueryClient();
   const popupRef = useRef(null);
 
   // Initial line items: always start with one empty row
@@ -25,6 +28,46 @@ export default function DraggableOrderPopup({
       hasStockError: false,
     },
   ]);
+
+  const { mutate: createOrderMutation, isPending } = useMutation({
+    mutationFn: createFullOrder,
+    onSuccess: () => {
+      // This will now ONLY run on a true success.
+      toast.success("Commande créée avec succès !");
+
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["customerDetails", customer.id],
+      });
+
+      if (onOrderCreated) {
+        onOrderCreated();
+      }
+      onClose();
+    },
+    onError: (error) => {
+      toast.error(`Erreur : ${error.message}`);
+    },
+  });
+
+  const handleFormSubmit = (formData) => {
+    const dataToSubmit = {
+      customer_id: customer.id,
+      notes: formData.get("notes"),
+      items: lineItems
+        .filter((item) => item.product_id || item.products?.id)
+        .map((item) => ({
+          product_id: item.product_id || item.products?.id,
+          quantity: Number(item.quantity),
+          selling_price: Number(item.selling_price),
+          purchase_price: Number(item.purchase_price),
+        })),
+    };
+
+    createOrderMutation(dataToSubmit);
+  };
 
   const subTotal = useMemo(
     () =>
@@ -101,34 +144,6 @@ export default function DraggableOrderPopup({
     lineItems.length === 0 ||
     lineItems.some((item) => !item.product_id && !item.products?.id) ||
     lineItems.some((item) => item.hasStockError);
-
-  // Handle form submit
-  const handleFormSubmit = async (formData) => {
-    const dataToSubmit = {
-      customer_id: customer.id,
-      notes: formData.get("notes"),
-      items: lineItems
-        .filter((item) => item.product_id || item.products?.id)
-        .map((item) => ({
-          product_id: item.product_id || item.products?.id,
-          quantity: item.quantity,
-          selling_price: item.selling_price,
-          purchase_price: item.purchase_price,
-        })),
-    };
-
-    const result = await createFullOrder(dataToSubmit);
-
-    if (result.error) {
-      alert(result.error.message);
-    } else {
-      // On success, call the callback function to notify the parent
-      if (onOrderCreated) {
-        onOrderCreated();
-      }
-      onClose();
-    }
-  };
 
   return (
     <Draggable nodeRef={popupRef} handle=".drag-handle">
@@ -313,13 +328,14 @@ export default function DraggableOrderPopup({
                 Annuler
               </button>
               <SubmitButton
+                isPending={isPending}
                 pendingText="Création..."
+                disabled={isSubmitDisabled || isPending}
                 className={`px-4 py-2 rounded-md text-sm ${
-                  isSubmitDisabled
-                    ? "bg-gray-300 text-gray-500"
+                  isSubmitDisabled || isPending
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "text-white bg-indigo-600 hover:bg-indigo-700"
                 }`}
-                disabled={isSubmitDisabled}
               >
                 Créer la commande
               </SubmitButton>

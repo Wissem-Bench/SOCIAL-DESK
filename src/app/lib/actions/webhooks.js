@@ -30,28 +30,6 @@ async function handleNewMessage(supabase, messageEvent) {
     return;
   }
 
-  // // 2. Fetch customer's real name from Meta API using the PAGE ACCESS TOKEN
-  // let customerName = `Client ${customerPlatformId.substring(0, 4)}`; // Fallback name
-  // try {
-  //   const url = `https://graph.facebook.com/${customerPlatformId}?fields=name&access_token=${pageAccessToken}`;
-  //   const response = await fetch(url);
-  //   const profileData = await response.json();
-
-  //   if (response.ok && profileData.name) {
-  //     customerName = profileData.name;
-  //   } else {
-  //     console.warn(
-  //       `[WARN] Could not fetch name for customer ${customerPlatformId}.`,
-  //       profileData.error || profileData
-  //     );
-  //   }
-  // } catch (apiError) {
-  //   console.error(
-  //     `[FAIL] API call to Meta failed for customer ${customerPlatformId}.`,
-  //     apiError
-  //   );
-  // }
-
   // 2. Fetch the prospect's name from Meta API
   let prospectName = `Prospect ${customerPlatformId.substring(0, 4)}`; // Fallback
   try {

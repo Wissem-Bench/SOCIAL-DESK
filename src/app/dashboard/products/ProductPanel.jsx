@@ -2,6 +2,7 @@
 
 import { useState, Fragment } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { Combobox, Transition } from "@headlessui/react";
 import {
   CheckIcon,
@@ -50,18 +51,26 @@ export default function ProductPanel({
       onClose();
     },
     onError: (err) => {
-      alert(`Erreur: ${err.message}`);
+      toast.error(`Erreur : ${err.message}`);
     },
   });
 
   const { mutate: updateProductMutation, isPending: isUpdating } = useMutation({
     mutationFn: updateProduct,
-    onSuccess: () => {
+    onMutate: () => {
+      // Show a loading toast when the mutation starts
+      const toastId = toast.loading("Mise à jour du produit...");
+      // Pass the ID to other callbacks via the context object
+      return { toastId };
+    },
+    // Add the correct parameters to the function signature ---
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Produit mis à jour !", { id: context.toastId });
       onClose();
     },
-    onError: (err) => {
-      alert(`Erreur: ${err.message}`);
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
     },
   });
 
@@ -75,7 +84,9 @@ export default function ProductPanel({
     }
 
     if (isEditMode) {
+      console.log("____BEFORE____");
       updateProductMutation({ id: productToEdit.id, formData: formData });
+      console.log("____AFTER____");
     } else {
       addProductMutation(formData);
     }

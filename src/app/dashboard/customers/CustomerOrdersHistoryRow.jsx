@@ -1,4 +1,3 @@
-// src/app/dashboard/customers/CustomerOrdersHistoryRow.jsx
 "use client";
 
 import { useQuery } from "@tanstack/react-query";

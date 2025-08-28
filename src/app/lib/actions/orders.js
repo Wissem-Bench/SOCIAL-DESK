@@ -169,7 +169,7 @@ export async function createFullOrder(data) {
 
   if (rpcError) {
     console.error("createFullOrder: RPC Error:", rpcError);
-    return { success: false, error: { message: rpcError.message } };
+    throw new Error(rpcError.message);
   }
 
   revalidatePath("/dashboard/inbox");

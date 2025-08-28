@@ -1,6 +1,7 @@
 "use client";
 
 import { addProspectAsCustomer } from "@/app/lib/actions/customers";
+import SubmitButton from "@/app/components/ui/SubmitButton";
 import OrderStatusBadge from "../OrderStatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -128,12 +129,12 @@ function ProspectView({ conversation }) {
         Cette personne n'est pas encore dans votre liste de clients.
       </p>
       <form action={handleAddCustomer}>
-        <button
-          type="submit"
+        <SubmitButton
+          pendingText="En cours..."
           className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
           Ajouter comme client
-        </button>
+        </SubmitButton>
       </form>
     </div>
   );

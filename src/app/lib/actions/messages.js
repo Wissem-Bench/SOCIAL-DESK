@@ -66,9 +66,7 @@ export async function sendMessage(formData) {
 
   if (!response.ok || responseData.error) {
     console.error("Meta API Error:", responseData.error);
-    return {
-      error: `Impossible d'envoyer le message: ${responseData.error.message}`,
-    };
+    throw new Error("Impossible d'envoyer le message");
   }
 
   // 3. Save the sent message to our own database
@@ -85,9 +83,7 @@ export async function sendMessage(formData) {
   if (dbError) {
     console.error("DB Save Error after sending message:", dbError);
     // The message was sent but not saved, this needs monitoring
-    return {
-      error: "Le message a été envoyé mais n'a pas pu être sauvegardé.",
-    };
+    throw new Error("Le message a été envoyé mais n'a pas pu être sauvegardé.");
   }
 
   revalidatePath("/dashboard/inbox");
