@@ -13,7 +13,6 @@ import SubmitButton from "@/app/components/ui/SubmitButton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-// Your Icon components remain the same
 const FacebookIcon = () => (
   <svg
     className="w-5 h-5 text-blue-600"
