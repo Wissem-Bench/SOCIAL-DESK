@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { recordStockArrival } from "@/app/lib/actions/products";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import SubmitButton from "@/app/components/ui/SubmitButton";
@@ -14,7 +15,11 @@ export default function StockArrivalModal({ products, onClose }) {
   // --- Setup the mutation with React Query ---
   const { mutate: recordArrivalMutation, isPending } = useMutation({
     mutationFn: recordStockArrival,
-    onSuccess: (data, variables) => {
+    onMutate: () => {
+      const toastId = toast.loading("Enregistrement de l'arrivage...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       // --- On success, invalidate queries to trigger automatic refetching ---
       // Invalidate the main product list
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -25,11 +30,11 @@ export default function StockArrivalModal({ products, onClose }) {
           queryKey: ["stockMovements", item.product_id],
         });
       });
-
+      toast.success("Arrivage enregistré !", { id: context.toastId });
       onClose(); // Close the modal
     },
-    onError: (err) => {
-      setError(err.message);
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
     },
   });
 

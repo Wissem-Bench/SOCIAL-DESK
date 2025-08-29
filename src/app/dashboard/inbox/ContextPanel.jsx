@@ -1,5 +1,7 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { addProspectAsCustomer } from "@/app/lib/actions/customers";
 import SubmitButton from "@/app/components/ui/SubmitButton";
 import OrderStatusBadge from "../OrderStatusBadge";
@@ -111,13 +113,40 @@ function CustomerDetailsView({ customer }) {
 
 // This is the view for a prospect who is not yet a customer
 function ProspectView({ conversation }) {
-  const handleAddCustomer = async () => {
-    await addProspectAsCustomer(
-      conversation.id,
-      conversation.platform_conversation_id,
-      conversation.platform,
-      conversation.prospect_name
-    );
+  const queryClient = useQueryClient();
+
+  const { mutate: addCustomerMutation, isPending } = useMutation({
+    // The mutation function needs to receive an object of variables
+    mutationFn: (variables) =>
+      addProspectAsCustomer(
+        variables.conversationId,
+        variables.platformCustomerId,
+        variables.platform,
+        variables.name
+      ),
+    onMutate: () => {
+      const toastId = toast.loading("Ajout du client...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
+      toast.success("Client ajouté avec succès !", { id: context.toastId });
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+    },
+  });
+
+  // The handler now calls the mutation with an object of variables
+  const handleAddCustomer = () => {
+    addCustomerMutation({
+      conversationId: conversation.id,
+      platformCustomerId: conversation.platform_conversation_id,
+      platform: conversation.platform,
+      name: conversation.prospect_name,
+    });
   };
 
   return (
@@ -130,7 +159,8 @@ function ProspectView({ conversation }) {
       </p>
       <form action={handleAddCustomer}>
         <SubmitButton
-          pendingText="En cours..."
+          isPending={isPending}
+          pendingText="Ajout en cours..."
           className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
           Ajouter comme client

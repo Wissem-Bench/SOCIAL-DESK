@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// I'm using heroicons here for demonstration purposes.
-// You can replace these with your own SVG components.
 import {
   HomeIcon,
   ChatBubbleBottomCenterTextIcon,

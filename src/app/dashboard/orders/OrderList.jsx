@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { getOrdersForUser, updateOrderStatus } from "@/app/lib/actions/orders";
 import { getCustomers } from "@/app/lib/actions/customers";
 import { getProductsForUser } from "@/app/lib/actions/products";
@@ -82,10 +83,17 @@ export default function OrderList() {
   const { mutate: updateStatusMutation } = useMutation({
     mutationFn: ({ orderId, newStatus }) =>
       updateOrderStatus(orderId, newStatus),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    onMutate: () => {
+      const toastId = toast.loading("Changement de statut...");
+      return { toastId };
     },
-    onError: (err) => alert(err.message),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("Statut modifié !", { id: context.toastId });
+    },
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+    },
   });
 
   // --- HANDLERS ---

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import {
   updateCustomer,
@@ -15,22 +16,36 @@ export default function CustomerPanel({ customerToEdit, onClose }) {
   const { mutate: createCustomerMutation, isPending: isCreating } = useMutation(
     {
       mutationFn: createManualCustomer,
-      onSuccess: () => {
+      onMutate: () => {
+        const toastId = toast.loading("Ajout de client...");
+        return { toastId };
+      },
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        toast.success("Client mis à jour !", { id: context.toastId });
         onClose();
       },
-      onError: (err) => alert(err.message),
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      },
     }
   );
 
   const { mutate: updateCustomerMutation, isPending: isUpdating } = useMutation(
     {
       mutationFn: updateCustomer,
-      onSuccess: () => {
+      onMutate: () => {
+        const toastId = toast.loading("Mise à jour du client...");
+        return { toastId };
+      },
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        toast.success("Client mis à jour !", { id: context.toastId });
         onClose();
       },
-      onError: (err) => alert(err.message),
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      },
     }
   );
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { adjustStockQuantity } from "@/app/lib/actions/products";
 import SubmitButton from "@/app/components/ui/SubmitButton";
 
@@ -11,16 +12,21 @@ export default function StockAdjustmentModal({ product, onClose }) {
 
   const { mutate: adjustStockMutation, isPending } = useMutation({
     mutationFn: adjustStockQuantity,
-    onSuccess: () => {
+    onMutate: () => {
+      const toastId = toast.loading("Ajustement de stock...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       // 2. --- On success, invalidate both the main product list and this product's specific history ---
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({
         queryKey: ["stockMovements", product.id],
       });
+      toast.success("Stock mis à jour !", { id: context.toastId });
       onClose(); // Close modal
     },
-    onError: (err) => {
-      setError(err.message);
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
     },
   });
 

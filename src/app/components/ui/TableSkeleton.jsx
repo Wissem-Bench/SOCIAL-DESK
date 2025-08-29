@@ -11,7 +11,6 @@ export default function TableSkeleton({ headers, rowCount = 5 }) {
             <th
               key={index}
               scope="col"
-              // Add special styling for the first column to match your design
               className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                 index === 0 ? "sticky left-0 z-10 bg-gray-50" : ""
               }`}

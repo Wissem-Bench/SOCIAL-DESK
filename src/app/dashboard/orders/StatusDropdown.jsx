@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   updateOrderStatus,
   cancelOrderWithNote,
@@ -35,14 +36,25 @@ export default function StatusDropdown({ order }) {
       }
       return updateOrderStatus(order.id, newStatus);
     },
-    onSuccess: () => {
+    onMutate: () => {
+      const toastId =
+        confirmation.newStatus === "annulé"
+          ? toast.loading("Annulation de commande...")
+          : toast.loading("Mise à jour de statut de commande...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       // On success, invalidate all 'orders' queries to refetch the list
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       handleCloseModal();
+      if (confirmation.newStatus === "annulé") {
+        toast.success("Commande annulée !", { id: context.toastId });
+      } else {
+        toast.success("Statut modifié !", { id: context.toastId });
+      }
     },
-    onError: (err) => {
-      // We can display the error in the modal
-      setError(err.message);
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
     },
   });
 

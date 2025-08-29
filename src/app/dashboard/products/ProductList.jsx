@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   getProductsForUser,
   archiveProduct,
@@ -93,13 +94,16 @@ export default function ProductList() {
       mutationFn: archiveProduct,
       onMutate: (productId) => {
         setMutatingProductId(productId);
+        const toastId = toast.loading("Archivage de produit...");
+        return { toastId };
       },
-      onSuccess: () => {
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["products"] });
         setArchiveConfirmation({ isOpen: false, productToArchive: null });
+        toast.success("Produit archivé !", { id: context.toastId });
       },
-      onError: (err) => {
-        alert(err.message);
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
       },
       onSettled: () => {
         setMutatingProductId(null);
@@ -111,12 +115,15 @@ export default function ProductList() {
       mutationFn: restoreProduct,
       onMutate: (productId) => {
         setMutatingProductId(productId);
+        const toastId = toast.loading("Restauration de produit...");
+        return { toastId };
       },
-      onSuccess: () => {
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["products"] });
+        toast.success("Produit restauré !", { id: context.toastId });
       },
-      onError: (err) => {
-        alert(err.message);
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
       },
       onSettled: () => {
         setMutatingProductId(null);

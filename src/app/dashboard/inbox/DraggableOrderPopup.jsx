@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import Draggable from "react-draggable";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Draggable from "react-draggable";
 import toast from "react-hot-toast";
 import { XCircleIcon } from "@heroicons/react/20/solid";
 import { createFullOrder } from "@/app/lib/actions/orders";
@@ -31,10 +31,11 @@ export default function DraggableOrderPopup({
 
   const { mutate: createOrderMutation, isPending } = useMutation({
     mutationFn: createFullOrder,
-    onSuccess: () => {
-      // This will now ONLY run on a true success.
-      toast.success("Commande créée avec succès !");
-
+    onMutate: () => {
+      const toastId = toast.loading("Création de commande...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -42,13 +43,15 @@ export default function DraggableOrderPopup({
         queryKey: ["customerDetails", customer.id],
       });
 
+      toast.success("Commande créée avec succès !", { id: context.toastId });
+
       if (onOrderCreated) {
         onOrderCreated();
       }
       onClose();
     },
-    onError: (error) => {
-      toast.error(`Erreur : ${error.message}`);
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
     },
   });
 

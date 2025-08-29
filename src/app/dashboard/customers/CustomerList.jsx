@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { Pencil, Archive } from "lucide-react";
 import {
   getCustomers,
@@ -58,12 +59,17 @@ export default function CustomerList() {
       mutationFn: archiveCustomer,
       onMutate: (customerId) => {
         setMutatingCustomerId(customerId);
+        const toastId = toast.loading("Archivage client ...");
+        return { toastId };
       },
-      onSuccess: () => {
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
         setArchiveConfirmation({ isOpen: false, customer: null });
+        toast.success("Client archivé !", { id: context.toastId });
       },
-      onError: (err) => alert(err.message),
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      },
       onSettled: () => {
         setMutatingCustomerId(null);
       },
@@ -74,11 +80,16 @@ export default function CustomerList() {
       mutationFn: restoreCustomer,
       onMutate: (customerId) => {
         setMutatingCustomerId(customerId); // Set which customer is being restored
+        const toastId = toast.loading("Restauration de client...");
+        return { toastId };
       },
-      onSuccess: () => {
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        toast.success("Client restauré !", { id: context.toastId });
       },
-      onError: (err) => alert(err.message),
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      },
       onSettled: () => {
         setMutatingCustomerId(null); // Reset after completion
       },

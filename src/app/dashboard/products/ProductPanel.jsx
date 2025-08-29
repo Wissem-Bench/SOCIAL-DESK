@@ -45,25 +45,27 @@ export default function ProductPanel({
   // --- Define mutations for add and update ---
   const { mutate: addProductMutation, isPending: isAdding } = useMutation({
     mutationFn: addProduct,
-    onSuccess: () => {
+    onMutate: () => {
+      const toastId = toast.loading("Ajout du produit...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       // On success, invalidate the 'products' query to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Produit ajouté !", { id: context.toastId });
       onClose();
     },
-    onError: (err) => {
-      toast.error(`Erreur : ${err.message}`);
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
     },
   });
 
   const { mutate: updateProductMutation, isPending: isUpdating } = useMutation({
     mutationFn: updateProduct,
     onMutate: () => {
-      // Show a loading toast when the mutation starts
       const toastId = toast.loading("Mise à jour du produit...");
-      // Pass the ID to other callbacks via the context object
       return { toastId };
     },
-    // Add the correct parameters to the function signature ---
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Produit mis à jour !", { id: context.toastId });
@@ -78,15 +80,12 @@ export default function ProductPanel({
     // Right way to console formData Object
     // console.log(Object.fromEntries(formData.entries()));
 
-    // Add selected category_id to the form data before submitting
     if (selectedCategory) {
       formData.append("category_id", selectedCategory.id);
     }
 
     if (isEditMode) {
-      console.log("____BEFORE____");
       updateProductMutation({ id: productToEdit.id, formData: formData });
-      console.log("____AFTER____");
     } else {
       addProductMutation(formData);
     }

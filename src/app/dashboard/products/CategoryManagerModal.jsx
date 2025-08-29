@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   createCategory,
   updateCategory,
@@ -20,12 +21,17 @@ export default function CategoryManagerModal({ initialCategories, onClose }) {
   const { mutate: createCategoryMutation, isPending: isCreating } = useMutation(
     {
       mutationFn: createCategory,
-      onSuccess: () => {
+      onMutate: () => {
+        const toastId = toast.loading("Création de catégorie...");
+        return { toastId };
+      },
+      onSuccess: (data, variables, context) => {
         // On success, tell React Query to refetch the 'categories' data
         queryClient.invalidateQueries({ queryKey: ["categories"] });
+        toast.success("Produit mis à jour !", { id: context.toastId });
       },
-      onError: (err) => {
-        alert(`Erreur: ${err.message}`);
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
       },
     }
   );
@@ -33,9 +39,17 @@ export default function CategoryManagerModal({ initialCategories, onClose }) {
   const { mutate: updateCategoryMutation, isPending: isUpdating } = useMutation(
     {
       mutationFn: updateCategory,
-      onSuccess: () => {
+      onMutate: () => {
+        const toastId = toast.loading("Mise à jour de catégorie...");
+        return { toastId };
+      },
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["categories"] });
+        toast.success("catégorie mis à jour !", { id: context.toastId });
         setEditingId(null); // Exit edit mode
+      },
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
       },
     }
   );
@@ -43,8 +57,16 @@ export default function CategoryManagerModal({ initialCategories, onClose }) {
   const { mutate: deleteCategoryMutation, isPending: isDeleting } = useMutation(
     {
       mutationFn: deleteCategory,
-      onSuccess: () => {
+      onMutate: () => {
+        const toastId = toast.loading("Suppression de catégorie...");
+        return { toastId };
+      },
+      onSuccess: (data, variables, context) => {
         queryClient.invalidateQueries({ queryKey: ["categories"] });
+        toast.success("Catégorie supprimée !", { id: context.toastId });
+      },
+      onError: (error, variables, context) => {
+        toast.error(`Erreur : ${error.message}`, { id: context.toastId });
       },
     }
   );

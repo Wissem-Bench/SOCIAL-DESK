@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { getCustomerDetailsForInbox } from "@/app/lib/actions/customers";
 import { getConversationsFromDB } from "@/app/lib/actions/conversations";
 import { sendMessage } from "@/app/lib/actions/messages";
@@ -48,6 +49,7 @@ export default function InboxClientComponent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
   const messagesContainerRef = useRef(null);
+  const replyInputRef = useRef(null);
 
   // --- STEP 1: Fetch conversations with useQuery ---
   const { data: conversationsData, isLoading: isLoadingConversations } =
@@ -87,6 +89,8 @@ export default function InboxClientComponent() {
       mutationFn: sendMessage,
       // Optimistic Update Logic
       onMutate: async (formData) => {
+        const toastId = toast.loading("Envoi du message...");
+
         const messageText = formData.get("messageText");
         const conversationId = formData.get("conversationId");
 
@@ -127,15 +131,45 @@ export default function InboxClientComponent() {
           messages: [...prev.messages, optimisticMessage],
         }));
 
-        return { previousConversations }; // Return context for rollback
+        return { previousConversations, toastId }; // Return context for rollback
+      },
+      onSuccess: (data, variables, context) => {
+        // 3. On success, update the loading toast to a success message
+        toast.success("Message envoyé !", { id: context.toastId });
       },
       // If the mutation fails, use the context returned from onMutate to roll back
-      onError: (err, formData, context) => {
-        alert(`Erreur d'envoi: ${err.message}`);
-        queryClient.setQueryData(
-          ["conversations", filters],
-          context.previousConversations
-        );
+      onError: (error, formData, context) => {
+        toast.error(`Erreur: ${error.message}`, { id: context.toastId });
+
+        // The text of the message that failed to send
+        const failedMessageText = formData.get("messageText");
+
+        // Roll back the UI to the previous state if a snapshot exists
+        if (context.previousConversations) {
+          queryClient.setQueryData(
+            ["conversations", filters],
+            context.previousConversations
+          );
+        }
+        const conversationId = formData.get("conversationId");
+        const previousSelectedConvo =
+          context.previousConversations.conversations.find(
+            (c) => c.id === conversationId
+          );
+        if (previousSelectedConvo) {
+          setSelectedConversation(previousSelectedConvo);
+        }
+
+        // 1. Put the failed message text back into the input field
+        if (failedMessageText) {
+          setReplyText(failedMessageText);
+        }
+
+        // 2. Set focus on the input field for a quick retry
+        // We use a short timeout to ensure the state has updated before focusing
+        setTimeout(() => {
+          replyInputRef.current?.focus();
+        }, 0);
       },
       // Always refetch after error or success
       onSettled: () => {
@@ -278,6 +312,7 @@ export default function InboxClientComponent() {
                     value={selectedConversation.id}
                   />
                   <input
+                    ref={replyInputRef}
                     type="text"
                     name="messageText"
                     placeholder="Écrire une réponse..."

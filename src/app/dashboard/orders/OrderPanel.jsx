@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, Fragment } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Combobox, Transition } from "@headlessui/react";
+import toast from "react-hot-toast";
 import {
   CheckIcon,
   ChevronUpDownIcon,
@@ -61,28 +62,44 @@ export default function OrderPanel({ order, customers, products, onClose }) {
   // --- MUTATIONS ---
   const { mutate: createOrderMutation, isPending: isCreating } = useMutation({
     mutationFn: createFullOrder,
-    onSuccess: () => {
+    onMutate: () => {
+      const toastId = toast.loading("Création de commande...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       // When an order is created, many things become stale.
       // We invalidate all related queries to force a complete refresh.
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] }); // Stock has changed
       queryClient.invalidateQueries({ queryKey: ["customers"] }); // Customer might have new order history
       queryClient.invalidateQueries({ queryKey: ["dashboardStats"] }); // Stats have changed
+      toast.success("Commande créée !", { id: context.toastId });
       onClose();
     },
-    onError: (err) => alert(`Erreur de création: ${err.message}`),
+    onError: (error, variables, context) => {
+      toast.error(`Erreur de création: ${error.message}`, {
+        id: context.toastId,
+      });
+    },
   });
 
   const { mutate: updateOrderMutation, isPending: isUpdating } = useMutation({
     mutationFn: updateFullOrder,
-    onSuccess: () => {
+    onMutate: () => {
+      const toastId = toast.loading("Mise à jour de commande...");
+      return { toastId };
+    },
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
+      toast.success("Produit mis à jour !", { id: context.toastId });
       onClose();
     },
-    onError: (err) => alert(`Erreur de modification: ${err.message}`),
+    onError: (error, variables, context) => {
+      toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+    },
   });
 
   // FORM SUBMISSION MANAGEMENT
