@@ -2,7 +2,7 @@
 import ProfileDropdown from "@/app/components/ui/ProfileDropdown";
 import NotificationsPanel from "./NotificationsPanel";
 
-export default function TopNavbar({ onMenuToggle, user }) {
+export default function TopNavbar({ onMenuToggle, user, onConfirmLogout }) {
   return (
     <header className="sticky top-0 bg-white shadow-sm z-30">
       <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center">
@@ -34,7 +34,7 @@ export default function TopNavbar({ onMenuToggle, user }) {
           {/* Vertical separator */}
           <div className="h-6 w-px bg-gray-200" />
 
-          <ProfileDropdown user={user} />
+          <ProfileDropdown user={user} onConfirmLogout={onConfirmLogout} />
         </div>
       </div>
     </header>

@@ -104,6 +104,7 @@ export default function ProductList() {
       },
       onError: (error, variables, context) => {
         toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+        console.error("Mutation Error:", error);
       },
       onSettled: () => {
         setMutatingProductId(null);
@@ -124,6 +125,7 @@ export default function ProductList() {
       },
       onError: (error, variables, context) => {
         toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+        console.error("Mutation Error:", error);
       },
       onSettled: () => {
         setMutatingProductId(null);

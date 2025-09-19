@@ -22,6 +22,7 @@ export async function GET(request) {
 
 // Meta webhook events (POST)
 export async function POST(request) {
+  console.log("Received webhook request:", request);
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256") ?? "";
 

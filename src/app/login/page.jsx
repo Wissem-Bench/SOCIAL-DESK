@@ -3,54 +3,54 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/app/lib/supabase/client";
+import { useMutation } from "@tanstack/react-query";
+import { signInWithCredentials } from "@/app/lib/actions/auth";
+import toast from "react-hot-toast";
 import SubmitButton from "@/app/components/ui/SubmitButton";
 
 export default function Login() {
-  // State for form fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // States for UI feedback
-  const [message, setMessage] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // This state will ONLY hold the "Invalid credentials" message
+  const [authError, setAuthError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
-  const supabase = createClient();
 
-  const handleSignIn = async (e) => {
-    e.preventDefault();
-    setMessage("");
-    setIsSuccess(false);
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        // Handle incorrect credentials or other auth errors
-        setMessage("L'email ou le mot de passe est incorrect.");
-        setLoading(false);
-      } else if (data.user) {
-        // Handle successful login
-        setMessage(null);
-        setIsSuccess(true);
+  const { mutate: signInMutation } = useMutation({
+    mutationFn: signInWithCredentials,
+    onMutate: () => {
+      setIsLoading(true); // Set loading true when mutation starts
+    },
+    onSuccess: (data) => {
+      if (data.error) {
+        setIsLoading(false);
+        // This is a "handled" error returned by our action
+        if (data.error.status === 400) {
+          setAuthError("L'email ou le mot de passe est incorrect.");
+        } else {
+          // Another handled error, but not for credentials
+          toast.error(data.error.message || "Une erreur est survenue.");
+        }
+      } else if (data.success) {
+        // On success, clear any previous auth errors and navigate
+        setAuthError("");
         router.push("/dashboard");
-        // This is crucial to ensure the server recognizes the new session
-        router.refresh();
+        // router.refresh(); // Crucial for server to recognize the new session
       }
-    } catch (error) {
-      // Handle unexpected network errors
-      console.error("Login Error:", error);
-      setMessage("Une erreur réseau est survenue. Veuillez réessayer.");
-      setLoading(false);
-    } finally {
-      // This will run whether the login succeeds or fails
-    }
+    },
+    onError: (error) => {
+      // onError will only catch UNEXPECTED errors (network, server crash)
+      setIsLoading(false);
+      console.error("Login Mutation Unexpected Error:", error);
+      toast.error("Un problème de connexion est survenu. Veuillez réessayer.");
+    },
+  });
+
+  const handleSignIn = (e) => {
+    e.preventDefault();
+    setAuthError(""); // Clear previous errors on a new attempt
+    signInMutation({ email, password });
   };
 
   return (
@@ -61,7 +61,6 @@ export default function Login() {
         </h1>
 
         <form onSubmit={handleSignIn}>
-          {/* Email Input */}
           <div className="mb-4">
             <label
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -81,8 +80,9 @@ export default function Login() {
             />
           </div>
 
-          {/* Password Input */}
-          <div className="mb-6">
+          <div className="mb-2">
+            {" "}
+            {/* Reduced margin-bottom */}
             <label
               className="block text-sm font-medium text-gray-700 mb-1"
               htmlFor="password"
@@ -101,33 +101,24 @@ export default function Login() {
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Fixed-height container for the error message */}
+          <div className="h-6 text-center text-sm text-red-600 mb-4">
+            {authError || ""}
+          </div>
+
           <SubmitButton
-            pendingText="Connexion en cours..."
-            className={`w-full p-3 rounded-md ${
-              loading
-                ? "bg-gray-300 text-gray-500"
-                : "text-white bg-indigo-600 hover:bg-indigo-700"
+            isPending={isLoading}
+            pendingText="Connexion en cours"
+            className={`w-full p-3 rounded-md text-white ${
+              isLoading
+                ? "bg-indigo-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
             }`}
-            disabled={loading}
-            isPending={loading}
           >
             Se connecter
           </SubmitButton>
         </form>
 
-        {/* Message Display */}
-        {message && (
-          <p
-            className={`mt-4 text-center text-sm ${
-              isSuccess ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {message}
-          </p>
-        )}
-
-        {/* Link to Sign Up page */}
         <p className="mt-6 text-center text-sm text-gray-600">
           Pas encore de compte ?{" "}
           <Link

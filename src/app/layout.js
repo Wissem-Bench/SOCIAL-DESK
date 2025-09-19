@@ -1,5 +1,7 @@
 import "@/app/_styles/globals.css";
 import { Toaster } from "react-hot-toast";
+import NextTopLoader from "nextjs-toploader";
+import QueryProvider from "@/app/components/providers/QueryProvider";
 
 export const metadata = {
   title: "SOCIAL DESK",
@@ -10,8 +12,20 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Toaster position="top-center" reverseOrder={false} />
-        {children}
+        <QueryProvider>
+          <Toaster position="top-center" reverseOrder={false} />
+          <NextTopLoader
+            color="#4F46E5"
+            initialPosition={0.08}
+            crawlSpeed={200}
+            height={3}
+            crawl={true}
+            showSpinner={false} // Disable the default spinner
+            easing="ease"
+            speed={200}
+          />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

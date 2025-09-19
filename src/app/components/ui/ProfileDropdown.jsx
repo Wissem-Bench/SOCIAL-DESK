@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/app/lib/supabase/client";
-import ConfirmationModal from "../../components/ui/ConfirmationModal";
+import { Fragment } from "react";
 import {
   ChevronDownIcon,
   UserCircleIcon,
@@ -12,67 +9,13 @@ import {
 } from "@heroicons/react/24/outline";
 import { Menu, Transition } from "@headlessui/react";
 
-export default function ProfileDropdown({ user }) {
-  const router = useRouter();
-
-  const [error, setError] = useState(null);
-  const [isPending, setIsPending] = useState(false);
-
-  const [confirmation, setConfirmation] = useState({
-    isOpen: false,
-    title: "",
-    message: "",
-  });
-
-  const confirmLogout = () => {
-    setConfirmation({
-      isOpen: true,
-      title: "Se déconnecter ?",
-      message: "Voulez-vous vraiment vous déconnecter ?",
-    });
-  };
-
-  const handleCloseModal = () => {
-    setError(null);
-    setConfirmation({
-      isOpen: false,
-      title: "",
-      message: "",
-    });
-  };
-
-  const handleLogout = async () => {
-    setIsPending(true);
-    try {
-      const supabase = await createClient();
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
-      setIsPending(false);
-      router.push("/login");
-      router.refresh();
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
-    }
-  };
-
+export default function ProfileDropdown({ user, onConfirmLogout }) {
   if (!user) {
     return <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />;
   }
 
   return (
     <>
-      <ConfirmationModal
-        isOpen={confirmation.isOpen}
-        title={confirmation.title}
-        message={confirmation.message}
-        onConfirm={handleLogout}
-        onClose={handleCloseModal}
-        errorMessage={error}
-        isPending={isPending}
-      />
       <Menu as="div" className="relative inline-block text-left">
         <div>
           <Menu.Button className="group inline-flex w-full justify-center items-center gap-x-2 rounded-md px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
@@ -136,7 +79,7 @@ export default function ProfileDropdown({ user }) {
               <Menu.Item>
                 {({ active }) => (
                   <button
-                    onClick={confirmLogout}
+                    onClick={onConfirmLogout}
                     className={`${
                       active ? "bg-red-50 text-red-900" : "text-gray-700"
                     } group flex w-full items-center px-4 py-2 text-sm`}

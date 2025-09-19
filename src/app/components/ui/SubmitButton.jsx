@@ -1,7 +1,6 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
-import { Spinner } from "@/components/ui/shadcn-io/spinner";
+import { Spinner } from "@/app/components/ui/shadcn-io/spinner";
 
 export default function SubmitButton({
   children,
@@ -10,8 +9,6 @@ export default function SubmitButton({
   pendingText = "Sauvegarde...",
   className,
 }) {
-  // const { pending } = useFormStatus();
-
   return (
     <button
       type="submit"
@@ -20,7 +17,8 @@ export default function SubmitButton({
     >
       {isPending ? (
         <span className="flex items-center justify-center">
-          <Spinner variant="circle-filled" /> {" " + pendingText}
+          {pendingText}
+          <Spinner variant="bars" className="ml-2" />
         </span>
       ) : (
         children

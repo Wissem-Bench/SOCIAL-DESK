@@ -57,6 +57,7 @@ export default function ProductPanel({
     },
     onError: (error, variables, context) => {
       toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      console.error("Mutation Error:", error);
     },
   });
 
@@ -73,6 +74,7 @@ export default function ProductPanel({
     },
     onError: (error, variables, context) => {
       toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      console.error("Mutation Error:", error);
     },
   });
 
@@ -142,9 +144,9 @@ export default function ProductPanel({
 
             {/* Category Section */}
             <div>
-              {/* The Combobox component now wraps everything related to it */}
+              {/* The Combobox component wraps everything related to it */}
               <Combobox value={selectedCategory} onChange={setSelectedCategory}>
-                {/* The Label is now correctly inside the Combobox */}
+                {/* The Label is inside the Combobox */}
                 <Combobox.Label className="block text-sm font-medium text-gray-700">
                   Catégorie
                 </Combobox.Label>
@@ -225,7 +227,7 @@ export default function ProductPanel({
                 <label className="block text-sm font-medium text-gray-700">
                   Stock Actuel
                 </label>
-                {/* The stock is now a disabled field in the panel. It should only be changed via StockAdjuster or dedicated stock-in forms. */}
+                {/* The stock is a disabled field in the panel. It should only be changed via StockAdjuster or dedicated stock-in forms. */}
                 <input
                   type="number"
                   name="stock_quantity"

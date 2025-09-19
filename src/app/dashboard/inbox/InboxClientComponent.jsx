@@ -140,6 +140,7 @@ export default function InboxClientComponent() {
       // If the mutation fails, use the context returned from onMutate to roll back
       onError: (error, formData, context) => {
         toast.error(`Erreur: ${error.message}`, { id: context.toastId });
+        console.error("Mutation Error:", error);
 
         // The text of the message that failed to send
         const failedMessageText = formData.get("messageText");

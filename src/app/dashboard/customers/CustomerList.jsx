@@ -69,6 +69,7 @@ export default function CustomerList() {
       },
       onError: (error, variables, context) => {
         toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+        console.error("Mutation Error:", error);
       },
       onSettled: () => {
         setMutatingCustomerId(null);
@@ -89,6 +90,7 @@ export default function CustomerList() {
       },
       onError: (error, variables, context) => {
         toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+        console.error("Mutation Error:", error);
       },
       onSettled: () => {
         setMutatingCustomerId(null); // Reset after completion

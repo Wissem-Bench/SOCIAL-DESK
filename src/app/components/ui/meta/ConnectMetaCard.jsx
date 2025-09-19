@@ -18,9 +18,7 @@ export default function ConnectMetaCard() {
           Votre session est gérée par notre système, mais l'accès à vos données
           professionnelles Meta nécessite cette autorisation.
         </p>
-        <div className="mt-4">
-          <LogoutButton />
-        </div>
+        <LogoutButton />
       </div>
     </div>
   );

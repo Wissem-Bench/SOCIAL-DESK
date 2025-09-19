@@ -49,7 +49,7 @@ export default function OrderList() {
     error: ordersError,
   } = useQuery({
     queryKey: queryKey,
-    // The query function now passes all filters to the backend
+    // The query function passes all filters to the backend
     queryFn: () => getOrdersForUser(filters),
   });
 
@@ -78,8 +78,6 @@ export default function OrderList() {
   const error = ordersError || customersError || productsError;
 
   // --- MUTATIONS ---
-  // We would add mutations for create/update order here later
-  // For now, let's refactor the status update
   const { mutate: updateStatusMutation } = useMutation({
     mutationFn: ({ orderId, newStatus }) =>
       updateOrderStatus(orderId, newStatus),
@@ -93,6 +91,7 @@ export default function OrderList() {
     },
     onError: (error, variables, context) => {
       toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      console.error("Mutation Error:", error);
     },
   });
 

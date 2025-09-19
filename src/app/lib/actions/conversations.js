@@ -5,8 +5,7 @@ import { getSupabaseWithUser } from "@/app/lib/supabase/server-utils";
 export async function getConversationsFromDB(filters = {}) {
   const { supabase, user } = await getSupabaseWithUser();
 
-  // All the complex query logic is now inside the PostgreSQL function.
-  // We just call it with the filters.
+  // All the complex query logic is inside the PostgreSQL function.
   const { data, error } = await supabase.rpc("get_filtered_conversations", {
     p_user_id: user.id,
     p_platform: filters.platform || "all",
@@ -19,6 +18,6 @@ export async function getConversationsFromDB(filters = {}) {
     throw new Error("Impossible de charger les conversations.");
   }
 
-  // The RPC function returns an array of JSON objects, which matches the expected structure.
+  // The RPC function returns an array of JSON objects.
   return { conversations: data };
 }

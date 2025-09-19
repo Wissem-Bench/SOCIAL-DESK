@@ -27,6 +27,7 @@ export default function StockAdjustmentModal({ product, onClose }) {
     },
     onError: (error, variables, context) => {
       toast.error(`Erreur : ${error.message}`, { id: context.toastId });
+      console.error("Mutation Error:", error);
     },
   });
 

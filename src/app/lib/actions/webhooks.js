@@ -91,12 +91,64 @@ async function handleNewMessage(supabase, messageEvent) {
   }
 }
 
+// --- NEW FEATURE to specifically manage Instagram messages ---
+async function handleInstagramMessage(supabase, messageEvent) {
+  console.log("Received an Instagram message:", messageEvent);
+  if (messageEvent.message && messageEvent.message.is_echo) {
+    console.log("Ignoring echo message");
+    return; // Ignore echoes
+  }
+
+  const igAccountId = messageEvent.recipient.id; // Instagram Professional Account ID
+  const customerIgId = messageEvent.sender.id; // Instagram-Scoped User ID (IGSID)
+
+  // 1. Find our user based on the IG Account ID
+  // NOTE: We might need to store `platform_account_id` in social_connections
+  // For now, let's assume we find the connection via the linked page ID.
+  // This part may need refinement based on your DB schema.
+  const { data: connection, error: connError } = await supabase
+    .from("social_connections")
+    .select("user_id, page_access_token")
+    .eq("platform_page_id", igAccountId) // Assuming page ID is linked
+    .single();
+
+  if (connError || !connection) {
+    console.error(
+      `Webhook IG: Could not find connection for IG Account ${igAccountId}`
+    );
+    return;
+  }
+
+  const userId = connection.user_id;
+
+  // The rest of the logic is very similar:
+  // 2. Fetch prospect name
+  // 3. Check for existing customer
+  // 4. Upsert conversation with platform: 'instagram'
+  // 5. Insert message
+  console.log(`Received an Instagram message from ${customerIgId}`);
+  // Pour l'instant, on se contente de logger pour confirmer la réception.
+  // Nous implémenterons la logique complète après.
+}
+
 export async function processWebhookEvent(supabase, payload) {
+  console.log("Received webhook payload:", JSON.stringify(payload, null, 2));
   if (payload.object === "page" && payload.entry) {
+    // This is a Messenger event
     for (const entry of payload.entry) {
       for (const event of entry.messaging) {
         if (event.message) {
           await handleNewMessage(supabase, event);
+        }
+      }
+    }
+  } else if (payload.object === "instagram") {
+    // This is an Instagram event
+    console.log("Processing Instagram event...");
+    for (const entry of payload.entry) {
+      for (const event of entry.messaging) {
+        if (event.message) {
+          await handleInstagramMessage(supabase, event);
         }
       }
     }
