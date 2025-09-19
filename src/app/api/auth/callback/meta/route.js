@@ -23,11 +23,16 @@ export async function GET(request) {
 
   try {
     // --- Step 1: Exchange code for a user access token ---
+    console.log(
+      "__ step 1 : `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`"
+    );
     const tokenResponse = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`
     );
+    console.log("__ 1st fetch succeeded");
 
     const tokenData = await tokenResponse.json();
+    console.log("__ tokenData", tokenData);
 
     if (tokenData.error) {
       console.error("Meta Token Error:", tokenData.error);
@@ -41,14 +46,18 @@ export async function GET(request) {
     const meResponse = await fetch(
       `https://graph.facebook.com/me?access_token=${userAccessToken}`
     );
+    console.log("__ meResponse", meResponse);
     const meData = await meResponse.json();
+    console.log("__ meData", meData);
     const platformUserId = meData.id;
 
     // --- Step 3: Get the user's managed pages to find the Page ID AND Page Access Token ---
     const pagesResponse = await fetch(
       `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
     );
+    console.log("__ pageResponse", pageResponse);
     const pagesData = await pagesResponse.json();
+    console.log("__ pagesData", pagesData);
     if (!pagesData.data || pagesData.data.length === 0)
       throw new Error("No pages found.");
 
@@ -62,6 +71,7 @@ export async function GET(request) {
       data: { user },
       error: userError,
     } = await auth.getUser();
+    console.log("__ data", data);
 
     if (userError || !user) {
       throw new Error("Could not find an authenticated Supabase user.");
@@ -85,6 +95,7 @@ export async function GET(request) {
           onConflict: "user_id, platform", // Tells which unique constraint to check
         }
       );
+    console.log("__ error", error);
 
     if (upsertError) {
       throw upsertError;
