@@ -55,7 +55,7 @@ export async function GET(request) {
     const pagesResponse = await fetch(
       `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
     );
-    console.log("__ pageResponse", pageResponse);
+    console.log("__ pagesResponse", pagesResponse);
     const pagesData = await pagesResponse.json();
     console.log("__ pagesData", pagesData);
     if (!pagesData.data || pagesData.data.length === 0)
