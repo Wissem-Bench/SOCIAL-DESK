@@ -18,46 +18,56 @@ export async function GET(request) {
   }
 
   const clientId = process.env.NEXT_PUBLIC_META_CLIENT_ID;
-  const clientSecret = process.env.META_APP_SECRET; // kept secret on the server !
+  const clientSecret = process.env.META_APP_SECRET;
   const redirectUri = process.env.NEXT_PUBLIC_META_REDIRECT_URI;
 
   try {
     // --- Step 1: Exchange code for a user access token ---
-    console.log(
-      "__ step 1 : `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`"
-    );
     const tokenResponse = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`
     );
-    console.log("__ 1st fetch succeeded");
 
     const tokenData = await tokenResponse.json();
-    console.log("__ tokenData", tokenData);
 
     if (tokenData.error) {
       console.error("Meta Token Error:", tokenData.error);
       throw new Error(tokenData.error.message);
     }
 
-    // For now, we're storing The short-lived token, it must be exchanged for a long-lived token.
-    const userAccessToken = tokenData.access_token;
+    const userAccessToken = tokenData.access_token; // This one expires in ~1 hour
 
-    // --- Step 2: Get the user's platform ID ---
-    const meResponse = await fetch(
-      `https://graph.facebook.com/me?access_token=${userAccessToken}`
+    const longLivedTokenResponse = await fetch(
+      `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${clientId}&client_secret=${clientSecret}&fb_exchange_token=${userAccessToken}`
     );
-    console.log("__ meResponse", meResponse);
+    const longLivedTokenData = await longLivedTokenResponse.json();
+
+    if (longLivedTokenData.error) {
+      console.error("Meta Long-Lived Token Error:", longLivedTokenData.error);
+      throw new Error(longLivedTokenData.error.message);
+    }
+
+    const longLivedUserAccessToken = longLivedTokenData.access_token;
+    console.log("__ Long-lived token obtained successfully.");
+
+    // --- Step 2: Get the user's platform ID (using the long-lived token) ---
+    const meResponse = await fetch(
+      `https://graph.facebook.com/me?access_token=${longLivedUserAccessToken}`
+    );
     const meData = await meResponse.json();
-    console.log("__ meData", meData);
     const platformUserId = meData.id;
+
+    // // --- Step 2: Get the user's platform ID ---
+    // const meResponse = await fetch(
+    //   `https://graph.facebook.com/me?access_token=${userAccessToken}`
+    // );
+    // const meData = await meResponse.json();
+    // const platformUserId = meData.id;
 
     // --- Step 3: Get the user's managed pages to find the Page ID AND Page Access Token ---
     const pagesResponse = await fetch(
       `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
     );
-    console.log("__ pagesResponse", pagesResponse);
     const pagesData = await pagesResponse.json();
-    console.log("__ pagesData", pagesData);
     if (!pagesData.data || pagesData.data.length === 0)
       throw new Error("No pages found.");
 
@@ -71,7 +81,6 @@ export async function GET(request) {
       data: { user },
       error: userError,
     } = await auth.getUser();
-    console.log("__ data", data);
 
     if (userError || !user) {
       throw new Error("Could not find an authenticated Supabase user.");
@@ -86,7 +95,7 @@ export async function GET(request) {
         {
           user_id: user.id,
           platform: "facebook", // The process is the same for Instagram, Meta handles them together here.
-          access_token: userAccessToken, // Don't forget to encrypt this token in production!
+          access_token: longLivedUserAccessToken, // Don't forget to encrypt this token in production!
           page_access_token: pageAccessToken, // The Page's own token
           platform_user_id: platformUserId,
           platform_page_id: pageId, // This is the page's ID
@@ -95,7 +104,6 @@ export async function GET(request) {
           onConflict: "user_id, platform", // Tells which unique constraint to check
         }
       );
-    console.log("__ error", error);
 
     if (upsertError) {
       throw upsertError;
