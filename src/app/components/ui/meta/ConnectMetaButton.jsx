@@ -12,6 +12,7 @@ export default function ConnectMetaButton() {
       "pages_messaging",
       "instagram_basic",
       "instagram_manage_messages",
+      "business_management",
     ].join(",");
 
     // Meta's Authorization URL
