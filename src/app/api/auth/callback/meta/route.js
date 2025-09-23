@@ -47,7 +47,10 @@ export async function GET(request) {
     }
 
     const longLivedUserAccessToken = longLivedTokenData.access_token;
-    console.log("__ Long-lived token obtained successfully.");
+    console.log(
+      "__ Long-lived token obtained successfully.",
+      longLivedUserAccessToken
+    );
 
     // --- Step 2: Get the user's platform ID (using the long-lived token) ---
     const meResponse = await fetch(
