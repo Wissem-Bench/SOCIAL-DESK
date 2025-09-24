@@ -68,7 +68,7 @@ export async function GET(request) {
 
     // --- Step 3: Get the user's managed pages to find the Page ID AND Page Access Token ---
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/me/accounts?access_token=${userAccessToken}`
+      `https://graph.facebook.com/me/accounts?access_token=${longLivedUserAccessToken}`
     );
     const pagesData = await pagesResponse.json();
     if (!pagesData.data || pagesData.data.length === 0)
